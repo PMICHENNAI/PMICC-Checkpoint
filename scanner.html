@@ -192,6 +192,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .pin-field-wrap { position: relative; }
 .pin-field-wrap .access-key-input { padding-right: 40px; }
 .pin-eye-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px; width: auto; color: #64748b; }
+
+/* ---- Membership status check ---- */
+#member-panel { display: none; margin-top: 14px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; }
+.member-label { display: block; font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 5px; }
+.member-select { width: 100%; padding: 11px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; background: #fff; }
+.member-badge { text-align: center; font-size: 17px; font-weight: bold; padding: 10px; border-radius: 6px; margin: 12px 0 8px; }
+.member-badge.active { background: #e6f4ea; color: #1e7e34; }
+.member-badge.other { background: #fdecea; color: #c62828; }
+.member-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+.member-row:last-child { border-bottom: none; }
+.member-row .k { color: #64748b; }
+.member-row .v { font-weight: bold; color: #0f172a; text-align: right; word-break: break-word; }
 </style>
 </head>
 <body>
@@ -270,6 +282,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 <span class="action-row-text"><span class="action-row-title">Register a walk-in</span><span class="action-row-sub">Not pre-registered for this event</span></span>
 <span class="action-row-chevron">›</span>
 </div>
+<div class="action-row" onclick="toggleMemberPanel()">
+<span class="action-row-icon">🪪</span>
+<span class="action-row-text"><span class="action-row-title">Check membership status</span><span class="action-row-sub">Is someone an active PMI Chennai member?</span></span>
+<span class="action-row-chevron">›</span>
+</div>
 <div class="action-row" onclick="toggleResendPanel()">
 <span class="action-row-icon">✉️</span>
 <span class="action-row-text"><span class="action-row-title">Resend QR pass</span><span class="action-row-sub">Attendee lost or never got their pass</span></span>
@@ -299,6 +316,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
   <input type="text" id="walkin-pmi-input" class="walkin-input" placeholder="PMI ID (optional)">
   <button class="btn-walkin-submit" id="walkin-submit-btn" onclick="submitWalkIn()">Register &amp; Check In</button>
   <div id="walkin-status" class="manual-status-note"></div>
+</div>
+
+<div id="member-panel">
+  <label class="member-label" for="member-type-select">Search by</label>
+  <select id="member-type-select" class="member-select" onchange="onMemberTypeChange()">
+    <option value="PMI ID">PMI ID</option>
+    <option value="Email">Email</option>
+    <option value="Phone Number">Phone Number (last 10 digits)</option>
+  </select>
+  <label class="member-label" id="member-query-label" for="member-query-input">Enter PMI ID</label>
+  <input type="text" id="member-query-input" class="manual-search-input" placeholder="e.g. 4004722" inputmode="numeric" autocomplete="off" oninput="filterMemberInput()" onkeydown="if(event.key==='Enter'){runMemberLookup();}">
+  <button class="btn-resend" id="member-btn" onclick="runMemberLookup()">Check Status</button>
+  <div id="member-result"></div>
 </div>
 
 <div id="resend-panel">
@@ -508,6 +538,7 @@ function relockScanner(message) {
   if (liveCounterInterval) clearInterval(liveCounterInterval);
   document.getElementById('live-counter-panel').innerHTML = '';
   document.getElementById('volunteer-greeting').innerHTML = '';
+  clearMemberLookup();
 
   document.getElementById('scanner-app').style.display = 'none';
   resetAttendanceScannerView();
@@ -792,6 +823,131 @@ function submitResendRequest() {
       btn.textContent = 'Resend My QR Pass';
       statusDiv.textContent = 'Something went wrong. Please try again in a moment.';
     });
+}
+
+// ================================================================================
+// MEMBERSHIP STATUS CHECK (volunteer-only, session-gated) - merged Membership Validator
+// ================================================================================
+const MEMBER_TYPES = {
+  'PMI ID':       { label: 'PMI ID',                  ph: 'e.g. 4004722',        mode: 'numeric', digits: true },
+  'Email':        { label: 'Email ID',                ph: 'name@example.com',    mode: 'email',   digits: false },
+  'Phone Number': { label: 'Last 10 digits of phone', ph: 'e.g. 9444898183',     mode: 'numeric', digits: true }
+};
+const MEMBER_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function toggleMemberPanel() {
+  const panel = document.getElementById('member-panel');
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+
+function onMemberTypeChange() {
+  const cfg = MEMBER_TYPES[document.getElementById('member-type-select').value];
+  const input = document.getElementById('member-query-input');
+  document.getElementById('member-query-label').textContent = 'Enter ' + cfg.label;
+  input.placeholder = cfg.ph;
+  input.setAttribute('inputmode', cfg.mode);
+  input.value = '';
+  document.getElementById('member-result').innerHTML = '';
+}
+
+function filterMemberInput() {
+  const type = document.getElementById('member-type-select').value;
+  const input = document.getElementById('member-query-input');
+  if (MEMBER_TYPES[type].digits) {
+    const digitsOnly = input.value.replace(/\D/g, '');
+    if (digitsOnly !== input.value) input.value = digitsOnly;
+  }
+}
+
+function clearMemberLookup() {
+  const panel = document.getElementById('member-panel');
+  if (!panel) return;
+  panel.style.display = 'none';
+  document.getElementById('member-query-input').value = '';
+  document.getElementById('member-result').innerHTML = '';
+  document.getElementById('member-type-select').value = 'PMI ID';
+  onMemberTypeChange();
+}
+
+function memberNote(text) {
+  const resultDiv = document.getElementById('member-result');
+  resultDiv.innerHTML = '';
+  const note = document.createElement('div');
+  note.className = 'manual-status-note';
+  note.textContent = text;
+  resultDiv.appendChild(note);
+}
+
+function runMemberLookup() {
+  const type = document.getElementById('member-type-select').value;
+  const value = document.getElementById('member-query-input').value.trim();
+  const btn = document.getElementById('member-btn');
+
+  if (!value) { memberNote('Please enter a value to search.'); return; }
+  if (type === 'PMI ID' && !/^\d+$/.test(value)) { memberNote('PMI ID must contain numbers only.'); return; }
+  if (type === 'Phone Number' && (!/^\d+$/.test(value) || value.length < 10)) { memberNote('Please enter at least the last 10 digits of the phone number.'); return; }
+  if (type === 'Email' && !MEMBER_EMAIL_PATTERN.test(value)) { memberNote('Please enter a valid email address.'); return; }
+
+  btn.disabled = true;
+  memberNote('Checking...');
+
+  callServer('searchMemberStatus', [currentSessionToken, type, value])
+    .then(function(response) {
+      btn.disabled = false;
+      if (response.sessionExpired) {
+        relockScanner(response.message || 'Your session expired. Please re-enter the access key.');
+        return;
+      }
+      if (!response.success) { memberNote(response.message || 'Could not check membership.'); return; }
+      renderMemberResult(response);
+    })
+    .catch(function() {
+      btn.disabled = false;
+      memberNote('Something went wrong. Please try again in a moment.');
+    });
+}
+
+function renderMemberResult(data) {
+  const resultDiv = document.getElementById('member-result');
+  resultDiv.innerHTML = '';
+
+  const badge = document.createElement('div');
+  badge.className = 'member-badge';
+  if (!data.found) {
+    badge.classList.add('other');
+    badge.textContent = 'Not Found';
+    resultDiv.appendChild(badge);
+    memberNote('No member matches this search. Please double-check the value entered.');
+    resultDiv.insertBefore(badge, resultDiv.firstChild);
+    return;
+  }
+
+  const isActive = String(data.status).trim().toLowerCase() === 'active';
+  badge.classList.add(isActive ? 'active' : 'other');
+  badge.textContent = data.status || 'Unknown';
+  resultDiv.appendChild(badge);
+
+  [
+    ['PMI ID', data.pmiId],
+    ['First Name', data.firstName],
+    ['Second Name', data.lastName],
+    ['Mobile Number', data.mobile],
+    ['Email ID', data.email],
+    ['Chapter Join Date', data.joinDate],
+    ['Chapter Expiration Date', data.expiryDate],
+    ['Chapter Membership', data.tenure]
+  ].forEach(function(pair) {
+    const row = document.createElement('div');
+    row.className = 'member-row';
+    const k = document.createElement('span'); k.className = 'k'; k.textContent = pair[0];
+    const v = document.createElement('span'); v.className = 'v'; v.textContent = (pair[1] === undefined || pair[1] === null || pair[1] === '') ? '\u2014' : String(pair[1]);
+    row.appendChild(k); row.appendChild(v);
+    resultDiv.appendChild(row);
+  });
+
+  if (data.contactMasked) {
+    memberNote('Contact details are masked for privacy.');
+  }
 }
 
 // ================================================================================
