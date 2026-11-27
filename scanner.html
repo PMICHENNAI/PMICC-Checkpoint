@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#002855">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="config.js"></script>
+<script src="api.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PMICC Checkpoint - Volunteer Scanner</title>
+<script src="vendor/html5-qrcode.min.js"></script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; margin: 0; padding: 20px; background: #eaedf2; color: #333; }
+
+.container { max-width: 450px; margin: auto; background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); box-sizing: border-box; }
+
+.brand-section { margin-bottom: 25px; padding-bottom: 5px; }
+
+.brand-title { color: #002855; font-size: 24px; font-weight: 700; margin: 0; }
+
+.sub-title { color: #00ffd0; background: #002855; display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.camera-card-label { border: 2px dashed #002855; padding: 50px 20px; border-radius: 10px; background: #f8fafc; margin: 25px 0; cursor: pointer; display: block; transition: all 0.2s ease-in-out; }
+
+.camera-card-label:hover { background: #f1f5f9; }
+
+.camera-card-label:active { transform: scale(0.98); }
+
+.hero-scan-card { border: none; padding: 26px 20px; border-radius: 12px; background: #002855; margin: 20px 0 12px; cursor: pointer; display: block; text-align: center; transition: transform 0.15s ease-in-out; }
+
+.hero-scan-card:active { transform: scale(0.98); }
+
+.hero-scan-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+
+.hero-scan-title { font-weight: 700; color: #fff; display: block; font-size: 16px; margin-bottom: 4px; }
+
+.hero-scan-sub { font-size: 12px; color: #a8bdd6; display: block; }
+
+.action-list { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+
+.action-row { display: flex; align-items: center; gap: 12px; padding: 13px 14px; cursor: pointer; border-bottom: 1px solid #e2e8f0; transition: background 0.15s; text-align: left; }
+
+.action-row:last-child { border-bottom: none; }
+
+.action-row:active { background: #eef2f7; }
+
+.action-row-icon { font-size: 18px; flex-shrink: 0; width: 22px; text-align: center; }
+
+.action-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.action-row-title { font-size: 13px; font-weight: 700; color: #002855; }
+
+.action-row-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+.action-row-chevron { color: #94a3b8; font-size: 16px; flex-shrink: 0; }
+
+.camera-icon { font-size: 54px; margin-bottom: 12px; display: block; }
+
+.action-text { font-weight: 700; color: #002855; display: block; font-size: 16px; margin-bottom: 4px; text-transform: uppercase; line-height: 1.4; }
+
+.sub-text { font-size: 13px; color: #64748b; display: block; }
+
+#native-hardware-camera-input { display: none; }
+
+#status-display { padding: 15px; border-radius: 8px; font-weight: 600; font-size: 14px; display: none; background: #f1f5f9; border: 1px solid #cbd5e1; text-align: left; white-space: pre-line; line-height: 1.4; box-sizing: border-box; }
+
+.success { background: #d1fae5 !important; color: #065f46 !important; border: 1px solid #a7f3d0 !important; border-left: 5px solid #10b981 !important; }
+
+.error { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fca5a5 !important; border-left: 5px solid #ef4444 !important; }
+
+.processing { background: #f1f5f9 !important; color: #1e293b !important; border: 1px solid #cbd5e1 !important; text-align: center !important; }
+
+.btn-reset { display: none; width: 100%; padding: 14px; margin-top: 15px; font-size: 16px; font-weight: bold; background: #002855; color: white; border: none; border-radius: 8px; cursor: pointer; box-sizing: border-box; }
+
+.btn-reset:hover { background: #001835; }
+
+.btn-reset:disabled { opacity: 0.6; cursor: not-allowed; }
+
+#scratch-canvas { display: none; }
+
+#inapp-browser-overlay { display: none; position: fixed; inset: 0; background: rgba(0,40,85,0.97); z-index: 999; color: #fff; padding: 30px 25px; box-sizing: border-box; text-align: center; overflow-y: auto; }
+
+#inapp-browser-overlay .overlay-inner { max-width: 380px; margin: 40px auto 0; }
+
+#inapp-browser-overlay .overlay-icon { font-size: 48px; display: block; margin-bottom: 16px; }
+
+#inapp-browser-overlay h2 { font-size: 19px; margin: 0 0 12px; }
+
+#inapp-browser-overlay p { font-size: 14px; line-height: 1.6; color: #cbd5e1; margin: 0 0 10px; }
+
+#inapp-browser-overlay .overlay-steps { text-align: left; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-size: 13px; line-height: 1.7; }
+
+.btn-open-browser { display: inline-block; width: 100%; padding: 14px; margin-top: 8px; font-size: 15px; font-weight: bold; background: #00ffd0; color: #002855; border: none; border-radius: 8px; cursor: pointer; box-sizing: border-box; }
+
+.btn-copy-link { display: inline-block; width: 100%; padding: 12px; margin-top: 10px; font-size: 14px; font-weight: 600; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; cursor: pointer; box-sizing: border-box; }
+
+.overlay-copied-note { font-size: 12px; color: #00ffd0; margin-top: 8px; display: none; }
+
+/* ---------- Access Gate (secret key) ---------- */
+#access-gate-card { border: 2px dashed #002855; padding: 40px 20px; border-radius: 10px; background: #f8fafc; margin: 25px 0; box-sizing: border-box; }
+
+.gate-label { font-size: 14px; color: #334155; font-weight: 600; margin: 10px 0 18px; line-height: 1.5; }
+
+.access-key-input { width: 100%; padding: 13px; font-size: 15px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; text-align: center; letter-spacing: 1px; }
+
+.access-key-input:focus { outline: none; border-color: #002855; }
+
+.access-key-input:disabled { background: #f1f5f9; opacity: 0.7; }
+
+.gate-error { color: #991b1b; font-size: 13px; font-weight: 600; margin-top: 10px; min-height: 16px; }
+
+/* ---------- Session bar (countdown + lock button) ---------- */
+.session-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 12px; margin-bottom: 18px; }
+
+.session-timer { font-size: 12px; color: #475569; font-weight: 600; text-align: left; }
+
+.btn-lock { flex-shrink: 0; padding: 7px 12px; font-size: 12px; font-weight: 700; background: transparent; color: #002855; border: 1px solid #002855; border-radius: 6px; cursor: pointer; }
+
+.btn-lock:hover { background: #002855; color: #fff; }
+
+.app-footer { margin-top: 22px; padding-top: 14px; border-top: 1px solid #eef1f5; font-size: 11px; color: #94a3b8; letter-spacing: 0.2px; }
+
+/* ---------- Resend panel (moved inline into #scanner-app, see below) ---------- */
+#resend-panel { display: none; margin-top: 12px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; }
+
+.resend-email-input { width: 100%; padding: 11px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; margin-bottom: 8px; }
+
+.btn-resend { width: 100%; padding: 11px; font-size: 14px; font-weight: bold; background: #002855; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
+.btn-resend:disabled { opacity: 0.6; cursor: not-allowed; }
+
+#resend-status { margin-top: 10px; font-size: 12px; line-height: 1.5; color: #334155; }
+
+/* ---------- Manual check-in fallback (volunteer-only) ---------- */
+.btn-manual-toggle { display: block; width: 100%; padding: 11px; margin-top: 10px; font-size: 13px; font-weight: 600; background: transparent; color: #002855; border: 1px dashed #002855; border-radius: 8px; cursor: pointer; box-sizing: border-box; }
+
+#manual-checkin-panel { display: none; margin-top: 14px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; }
+
+.manual-search-input { width: 100%; padding: 11px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
+
+.manual-result-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px; background: #fff; }
+
+.manual-result-info { font-size: 12px; line-height: 1.5; color: #334155; }
+
+.manual-result-info strong { color: #002855; font-size: 13px; }
+
+.btn-manual-checkin { flex-shrink: 0; padding: 8px 12px; font-size: 12px; font-weight: 700; background: #002855; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
+.btn-manual-checkin:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.manual-status-note { font-size: 12px; color: #64748b; margin-top: 6px; }
+
+/* ---------- Offline queue indicator ---------- */
+#offline-queue-badge { display: none; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 10px 12px; font-size: 12px; font-weight: 600; margin-bottom: 14px; text-align: left; line-height: 1.5; }
+
+#offline-queue-badge.synced { background: #d1fae5; color: #065f46; border-color: #a7f3d0; border-left-color: #10b981; }
+
+/* ---------- Volunteer greeting & live counter ---------- */
+#volunteer-greeting { font-size: 12px; color: #64748b; margin-bottom: 10px; text-align: center; }
+
+#live-counter-panel { margin-bottom: 14px; }
+
+.live-counter-row { display: flex; justify-content: space-between; align-items: center; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; font-size: 12px; }
+
+.live-counter-event { color: #3730a3; font-weight: 600; }
+
+.live-counter-count { color: #1e1b4b; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------- Walk-in registration ---------- */
+.btn-walkin-toggle { display: block; width: 100%; padding: 11px; margin-top: 10px; font-size: 13px; font-weight: 600; background: transparent; color: #065f46; border: 1px dashed #065f46; border-radius: 8px; cursor: pointer; box-sizing: border-box; }
+
+#walkin-panel { display: none; margin-top: 14px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; }
+
+.walkin-input { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; margin-bottom: 8px; }
+
+.btn-walkin-submit { width: 100%; padding: 11px; font-size: 14px; font-weight: bold; background: #065f46; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
+.btn-walkin-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ---------- Cancelled-registration override ---------- */
+.btn-override { margin-top: 10px; width: 100%; padding: 10px; font-size: 13px; font-weight: 700; background: #fff; color: #b45309; border: 1px solid #f59e0b; border-radius: 6px; cursor: pointer; }
+
+.btn-override:disabled { opacity: 0.6; cursor: not-allowed; }
+.brand-logo { display: block; max-width: 260px; height: auto; margin: 0 auto 14px; }
+
+.pin-field-wrap { position: relative; }
+.pin-field-wrap .access-key-input { padding-right: 40px; }
+.pin-eye-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px; width: auto; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div id="inapp-browser-overlay">
+  <div class="overlay-inner">
+    <span class="overlay-icon">⚠️</span>
+    <h2>Please open this in your regular browser</h2>
+    <p>Camera scanning doesn't work reliably inside the WhatsApp / Instagram / Facebook in-app browser. Please open this link in Chrome or Safari.</p>
+    <div class="overlay-steps" id="overlay-steps-android">
+      <strong>Android:</strong><br>
+      Tap the <strong>⋮ (three dots)</strong> at the top-right of this screen, then choose <strong>"Open in Chrome"</strong> or <strong>"Open in Browser"</strong>.
+    </div>
+    <div class="overlay-steps" id="overlay-steps-ios" style="display:none;">
+      <strong>iPhone:</strong><br>
+      Tap the <strong>Share icon</strong> or <strong>••• menu</strong> at the bottom of this screen, then choose <strong>"Open in Safari"</strong>.
+    </div>
+    <button class="btn-open-browser" id="try-open-chrome-btn" onclick="tryOpenInChrome()">Try Opening in Chrome</button>
+    <button class="btn-copy-link" onclick="copyPageLink()">Copy Link Instead</button>
+    <div class="overlay-copied-note" id="copied-note">✅ Link copied — paste it in Chrome/Safari</div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="brand-section">
+<img class="brand-logo" id="brand-logo-img" src="assets/logo-full.png" alt="PMI Chennai Chapter - Chapter of the Year 2025 Winner">
+<h1 class="brand-title">PMICC Checkpoint</h1>
+<div class="sub-title">Unified Multi-Event Attendance Tracker</div>
+</div>
+
+<!-- ===================== ACCESS GATE ===================== -->
+<div id="access-gate-card">
+  <span class="camera-icon">🔒</span>
+  <div class="gate-label">Enter today's event access key<br>to unlock the scanner</div>
+  <div class="pin-field-wrap">
+    <input type="password" id="access-key-input" class="access-key-input" placeholder="Access Key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" onkeydown="if(event.key==='Enter'){document.getElementById('volunteer-pin-input').focus();}">
+    <button type="button" class="pin-eye-toggle" onclick="togglePinVisibility('access-key-input', this)">👁</button>
+  </div>
+  <div class="pin-field-wrap" style="margin-top:8px;">
+    <input type="password" id="volunteer-pin-input" class="access-key-input" placeholder="Your PIN" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" onkeydown="if(event.key==='Enter'){submitAccessKey();}">
+    <button type="button" class="pin-eye-toggle" onclick="togglePinVisibility('volunteer-pin-input', this)">👁</button>
+  </div>
+  <button class="btn-reset" id="unlock-btn" style="display:block;" onclick="submitAccessKey()">Unlock Scanner</button>
+  <div id="access-gate-error" class="gate-error"></div>
+</div>
+
+<!-- ===================== SCANNER APP (hidden until unlocked) ===================== -->
+<div id="scanner-app" style="display:none;">
+
+<div class="session-bar">
+  <div class="session-timer" id="session-timer"></div>
+  <button class="btn-lock" id="lock-scanner-btn" onclick="relockScanner('Scanner locked.')">🔒 Lock</button>
+</div>
+
+<div id="volunteer-greeting"></div>
+
+<div id="live-counter-panel"></div>
+
+<div id="offline-queue-badge"></div>
+
+<label for="native-hardware-camera-input" class="hero-scan-card" id="launcher-card">
+<span class="hero-scan-icon">📷</span>
+<span class="hero-scan-title">Scan QR pass</span>
+<span class="hero-scan-sub">Tap to open camera or upload a screenshot</span>
+</label>
+
+<div class="action-list">
+<div class="action-row" onclick="toggleManualCheckinPanel()">
+<span class="action-row-icon">🔍</span>
+<span class="action-row-text"><span class="action-row-title">Search and check in</span><span class="action-row-sub">Can't scan? Find them by name, email, or PMI ID</span></span>
+<span class="action-row-chevron">›</span>
+</div>
+<div class="action-row" onclick="toggleWalkinPanel()">
+<span class="action-row-icon">🚶</span>
+<span class="action-row-text"><span class="action-row-title">Register a walk-in</span><span class="action-row-sub">Not pre-registered for this event</span></span>
+<span class="action-row-chevron">›</span>
+</div>
+<div class="action-row" onclick="toggleResendPanel()">
+<span class="action-row-icon">✉️</span>
+<span class="action-row-text"><span class="action-row-title">Resend QR pass</span><span class="action-row-sub">Attendee lost or never got their pass</span></span>
+<span class="action-row-chevron">›</span>
+</div>
+</div>
+
+<input type="file" id="native-hardware-camera-input" accept="image/*" capture="environment" onchange="processCapturedPassImage(this)">
+
+<div id="status-display"></div>
+
+<button class="btn-reset" id="reset-button" onclick="resetAttendanceScannerView()">Scan Next Registration</button>
+
+<div id="manual-checkin-panel">
+  <input type="text" id="manual-search-input" class="manual-search-input" placeholder="Search by name, email, or PMI ID" onkeydown="if(event.key==='Enter'){runManualSearch();}">
+  <button class="btn-resend" onclick="runManualSearch()">Search</button>
+  <div id="manual-search-results"></div>
+</div>
+
+<div id="walkin-panel">
+  <input type="text" id="walkin-event-input" class="walkin-input" list="walkin-event-list" placeholder="Event name *" autocomplete="off">
+  <datalist id="walkin-event-list"></datalist>
+  <input type="text" id="walkin-firstname-input" class="walkin-input" placeholder="First name *">
+  <input type="text" id="walkin-lastname-input" class="walkin-input" placeholder="Last name">
+  <input type="email" id="walkin-email-input" class="walkin-input" placeholder="Email *">
+  <input type="tel" id="walkin-mobile-input" class="walkin-input" placeholder="Mobile (optional)">
+  <input type="text" id="walkin-pmi-input" class="walkin-input" placeholder="PMI ID (optional)">
+  <button class="btn-walkin-submit" id="walkin-submit-btn" onclick="submitWalkIn()">Register &amp; Check In</button>
+  <div id="walkin-status" class="manual-status-note"></div>
+</div>
+
+<div id="resend-panel">
+  <input type="email" id="resend-email-input" class="resend-email-input" placeholder="Email you registered with" autocomplete="email" onkeydown="if(event.key==='Enter'){submitResendRequest();}">
+  <button class="btn-resend" id="resend-btn" onclick="submitResendRequest()">Resend My QR Pass</button>
+  <div id="resend-status"></div>
+</div>
+
+</div>
+
+<div id="scratch-canvas"></div>
+
+<div class="app-footer">This application design and built by Arumugam Mariappan, PMICC</div>
+
+</div>
+
+<script>
+
+// ================================================================================
+// SERVER CALL LAYER — replaces google.script.run for the standalone app.
+// Points at your deployed Apps Script /exec URL, which serves doPost() (see
+// api_router.gs). Content-Type stays 'text/plain' so the request qualifies as
+// a CORS "simple request" and skips preflight, since Apps Script has no
+// doOptions() to answer one.
+// ================================================================================
+
+// Loads the logo before login (unauthenticated) — replaces the old server-side
+// <?!= logoDataUri ?> scriptlet, which only works when Apps Script itself
+// renders the page template. Calls the new getPublicBrandLogo() function
+// instead (see public_logo_addition.gs).
+function loadBrandLogo() {
+  if (!window.PMICC_CONFIG.USE_SERVER_LOGO) return;
+  callServer('getPublicBrandLogo', [])
+    .then(function(response) {
+      if (response.dataUri) {
+        const img = document.getElementById('brand-logo-img');
+        img.src = response.dataUri;
+        img.style.display = 'block';
+      }
+    })
+    .catch(function() { /* no logo yet, or offline — leave hidden */ });
+}
+
+let html5QrScannerDecoder = null;
+
+// ---------- SESSION STATE ----------
+let currentSessionToken = null;
+let sessionExpiresAt = null;
+let sessionCountdownInterval = null;
+let idleTimer = null;
+let liveCounterInterval = null;
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // auto re-lock after 30 minutes of no interaction
+
+function togglePinVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+// ---------- IN-APP BROWSER DETECTION (WhatsApp / Instagram / Facebook / Line etc.) ----------
+
+function isRunningInsideInAppBrowser() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera || "";
+  return /FBAN|FBAV|Instagram|WhatsApp|Line\/|Snapchat|TikTok/i.test(ua);
+}
+
+function isIOSDevice() {
+  const ua = navigator.userAgent || "";
+  return /iPhone|iPad|iPod/i.test(ua);
+}
+
+function tryOpenInChrome() {
+  const currentUrl = window.location.href;
+  if (isIOSDevice()) {
+    copyPageLink();
+    return;
+  }
+  const strippedUrl = currentUrl.replace(/^https?:\/\//, '');
+  window.location.href = "intent://" + strippedUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+}
+
+function copyPageLink() {
+  const currentUrl = window.location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentUrl).then(() => {
+      document.getElementById('copied-note').style.display = 'block';
+    }).catch(() => {
+      window.prompt("Copy this link and open it in Chrome/Safari:", currentUrl);
+    });
+  } else {
+    window.prompt("Copy this link and open it in Chrome/Safari:", currentUrl);
+  }
+}
+
+// ---------- ACCESS GATE (secret key) ----------
+
+function submitAccessKey() {
+  const keyInput = document.getElementById('access-key-input');
+  const pinInput = document.getElementById('volunteer-pin-input');
+  const errorDiv = document.getElementById('access-gate-error');
+  const unlockBtn = document.getElementById('unlock-btn');
+  const key = keyInput.value.trim();
+  const pin = pinInput.value.trim();
+
+  if (!key) {
+    errorDiv.textContent = 'Please enter the access key.';
+    return;
+  }
+  if (!pin) {
+    errorDiv.textContent = 'Please enter your volunteer PIN.';
+    return;
+  }
+
+  unlockBtn.disabled = true;
+  keyInput.disabled = true;
+  pinInput.disabled = true;
+  unlockBtn.textContent = 'Verifying...';
+  errorDiv.textContent = '';
+
+  callServer('verifyAccessKey', [key, pin])
+    .then(function(response) {
+      unlockBtn.disabled = false;
+      keyInput.disabled = false;
+      pinInput.disabled = false;
+      unlockBtn.textContent = 'Unlock Scanner';
+
+      if (response.success) {
+        currentSessionToken = response.token;
+        document.getElementById('access-gate-card').style.display = 'none';
+        document.getElementById('scanner-app').style.display = 'block';
+        keyInput.value = '';
+        pinInput.value = '';
+        startSessionCountdown(response.expiresInSeconds);
+        resetIdleTimer();
+        updateOfflineQueueBadge();
+        flushOfflineQueue();
+        populateWalkinEventList();
+        showVolunteerGreeting(response.volunteerName);
+        startLiveCounterPolling();
+      } else {
+        errorDiv.textContent = response.message || '❌ Incorrect access key.';
+        pinInput.value = '';
+        keyInput.focus();
+      }
+    })
+    .catch(function() {
+      unlockBtn.disabled = false;
+      keyInput.disabled = false;
+      pinInput.disabled = false;
+      unlockBtn.textContent = 'Unlock Scanner';
+      errorDiv.textContent = '⚠️ Verification error. Please try again.';
+    });
+}
+
+// ---------- SESSION COUNTDOWN ----------
+
+function startSessionCountdown(expiresInSeconds) {
+  sessionExpiresAt = Date.now() + (Number(expiresInSeconds) || 0) * 1000;
+  if (sessionCountdownInterval) clearInterval(sessionCountdownInterval);
+  sessionCountdownInterval = setInterval(updateSessionCountdownDisplay, 1000);
+  updateSessionCountdownDisplay();
+}
+
+function updateSessionCountdownDisplay() {
+  const timerDiv = document.getElementById('session-timer');
+  if (!sessionExpiresAt || !timerDiv) return;
+
+  const remainingMs = sessionExpiresAt - Date.now();
+  if (remainingMs <= 0) {
+    relockScanner('Your session expired. Please re-enter the access key.');
+    return;
+  }
+  const h = Math.floor(remainingMs / 3600000);
+  const m = Math.floor((remainingMs % 3600000) / 60000);
+  timerDiv.textContent = `Session active — expires in ${h}h ${m}m`;
+}
+
+// ---------- IDLE AUTO-LOCK ----------
+
+function resetIdleTimer() {
+  if (idleTimer) clearTimeout(idleTimer);
+  if (!currentSessionToken) return;
+  idleTimer = setTimeout(() => {
+    relockScanner('Locked due to inactivity. Please re-enter the access key.');
+  }, IDLE_TIMEOUT_MS);
+}
+
+['click', 'touchstart', 'keydown'].forEach(evt => {
+  document.addEventListener(evt, () => { if (currentSessionToken) resetIdleTimer(); });
+});
+
+// ---------- LOCK / RE-LOCK ----------
+
+function relockScanner(message) {
+  if (currentSessionToken) {
+    callServer('invalidateSession', [currentSessionToken]).catch(function() { /* best-effort */ });
+  }
+  currentSessionToken = null;
+  sessionExpiresAt = null;
+  if (idleTimer) clearTimeout(idleTimer);
+  if (sessionCountdownInterval) clearInterval(sessionCountdownInterval);
+  if (liveCounterInterval) clearInterval(liveCounterInterval);
+  document.getElementById('live-counter-panel').innerHTML = '';
+  document.getElementById('volunteer-greeting').innerHTML = '';
+
+  document.getElementById('scanner-app').style.display = 'none';
+  resetAttendanceScannerView();
+  document.getElementById('access-gate-card').style.display = 'block';
+
+  const errorDiv = document.getElementById('access-gate-error');
+  errorDiv.textContent = message || '';
+  const keyInput = document.getElementById('access-key-input');
+  keyInput.value = '';
+  keyInput.disabled = false;
+  keyInput.focus();
+}
+
+window.onload = function() {
+  loadBrandLogo();
+
+  if (isRunningInsideInAppBrowser()) {
+    document.getElementById('inapp-browser-overlay').style.display = 'block';
+    if (isIOSDevice()) {
+      document.getElementById('overlay-steps-android').style.display = 'none';
+      document.getElementById('overlay-steps-ios').style.display = 'block';
+      document.getElementById('try-open-chrome-btn').textContent = 'Copy Link to Open in Safari';
+    }
+  }
+
+  html5QrScannerDecoder = new Html5Qrcode("scratch-canvas", {
+    experimentalFeatures: {
+      useBarCodeDetectorIfSupported: true
+    }
+  });
+
+  const keyInput = document.getElementById('access-key-input');
+  if (keyInput) keyInput.focus();
+};
+
+function processCapturedPassImage(inputElement) {
+  if (!inputElement.files || inputElement.files.length === 0) return;
+  const selectedImageFile = inputElement.files[0];
+  const statusDiv = document.getElementById('status-display');
+
+  document.getElementById('launcher-card').style.display = 'none';
+  statusDiv.style.display = 'block';
+  statusDiv.className = 'processing';
+  statusDiv.innerHTML = "⏳ <strong>Parsing QR Pass Pattern...</strong>\nExtracting code signatures using hardware matrix engines...";
+
+  if (!html5QrScannerDecoder) {
+    html5QrScannerDecoder = new Html5Qrcode("scratch-canvas", {
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+    });
+  }
+
+  html5QrScannerDecoder.scanFile(selectedImageFile, true)
+    .then(decodedText => {
+      statusDiv.innerHTML = "⏳ <strong>Syncing Attendance Record...</strong>\nValidating registration token signatures with database matrix...";
+      executeBackendVerificationPipeline(decodedText);
+    })
+    .catch(err => {
+      statusDiv.className = 'error';
+      statusDiv.innerHTML = "<strong>❌ QR Code Detection Failed</strong>\n\nThe image may be blurry, have severe glare, or contain unaligned frame angles.\n\n<strong>Pro-Tips for Volunteers:</strong>\n1. Tap 'Scan Next Registration' below to retry.\n2. If taking a new photo, move closer and ensure the QR matrix fills the center frame.\n3. If uploading a screenshot, ensure it is uncropped and clearly visible.";
+      document.getElementById('reset-button').style.display = 'block';
+    });
+}
+
+function executeBackendVerificationPipeline(decodedText) {
+  if (!navigator.onLine) {
+    queueScanForLater(decodedText);
+    return;
+  }
+
+  callServer('processCheckIn', [decodedText, currentSessionToken])
+    .then(function(response) {
+      if (response.sessionExpired) {
+        relockScanner(response.message || 'Your session expired. Please re-enter the access key.');
+        return;
+      }
+      const statusDiv = document.getElementById('status-display');
+      statusDiv.className = response.success ? 'success' : 'error';
+      statusDiv.innerHTML = response.message;
+      document.getElementById('reset-button').style.display = 'block';
+
+      if (response.cancelled && response.row) {
+        const overrideBtn = document.createElement('button');
+        overrideBtn.className = 'btn-override';
+        overrideBtn.textContent = 'Override & Check In Anyway';
+        overrideBtn.onclick = function() { submitOverrideCheckIn(response.row, overrideBtn, statusDiv); };
+        statusDiv.appendChild(document.createElement('br'));
+        statusDiv.appendChild(overrideBtn);
+      }
+    })
+    .catch(function() {
+      // A transport-level failure here usually means the connection dropped
+      // mid-request on flaky venue wifi - queue it instead of losing the scan.
+      queueScanForLater(decodedText);
+    });
+}
+
+function resetAttendanceScannerView() {
+  document.getElementById('native-hardware-camera-input').value = "";
+  document.getElementById('status-display').style.display = 'none';
+  document.getElementById('reset-button').style.display = 'none';
+  document.getElementById('launcher-card').style.display = 'block';
+  refreshLiveCounter();
+
+  const statusDiv = document.getElementById('status-display');
+  statusDiv.className = '';
+  statusDiv.innerHTML = '';
+}
+
+// ================================================================================
+// OFFLINE QUEUE (resilient scanning on flaky venue wifi)
+// processCheckIn() is idempotent server-side, so retrying a queued item is
+// always safe even if it had actually gone through right before the
+// connection dropped.
+// ================================================================================
+const OFFLINE_QUEUE_KEY = 'pmicc_offline_scan_queue';
+
+function loadOfflineQueue() {
+  try {
+    return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveOfflineQueue(queue) {
+  try {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+  } catch (e) { /* storage unavailable - queue just won't survive a reload */ }
+}
+
+// ================================================================================
+// VOLUNTEER GREETING & LIVE COUNTER
+// ================================================================================
+
+function showVolunteerGreeting(volunteerName) {
+  const div = document.getElementById('volunteer-greeting');
+  if (volunteerName) {
+    div.textContent = 'Signed in as ' + volunteerName;
+  } else {
+    div.textContent = '';
+  }
+}
+
+function startLiveCounterPolling() {
+  refreshLiveCounter();
+  if (liveCounterInterval) clearInterval(liveCounterInterval);
+  liveCounterInterval = setInterval(refreshLiveCounter, 20000);
+}
+
+function refreshLiveCounter() {
+  if (!currentSessionToken) return;
+
+  callServer('getLiveCheckinCounts', [currentSessionToken])
+    .then(function(response) {
+      if (response.sessionExpired) return;
+      renderLiveCounter(response.events || []);
+    })
+    .catch(function() { /* silent - will retry on next tick */ });
+}
+
+function renderLiveCounter(events) {
+  const panel = document.getElementById('live-counter-panel');
+  panel.innerHTML = '';
+
+  if (!events.length) return;
+
+  events.forEach(function(ev) {
+    const row = document.createElement('div');
+    row.className = 'live-counter-row';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'live-counter-event';
+    nameSpan.textContent = 'Live Event: ' + ev.eventName;
+
+    const countSpan = document.createElement('span');
+    countSpan.className = 'live-counter-count';
+    countSpan.textContent = ev.checkedIn + ' / ' + ev.total;
+
+    row.appendChild(nameSpan);
+    row.appendChild(countSpan);
+    panel.appendChild(row);
+  });
+}
+
+function queueScanForLater(decodedText) {
+  const queue = loadOfflineQueue();
+  queue.push({ qrData: decodedText, queuedAt: Date.now() });
+  saveOfflineQueue(queue);
+  updateOfflineQueueBadge();
+
+  const statusDiv = document.getElementById('status-display');
+  statusDiv.style.display = 'block';
+  statusDiv.className = 'processing';
+  statusDiv.innerHTML = "📥 <strong>Saved for later (offline)</strong>\nNo connection right now — this scan is queued and will sync automatically once you're back online.";
+  document.getElementById('reset-button').style.display = 'block';
+}
+
+function updateOfflineQueueBadge() {
+  const queue = loadOfflineQueue();
+  const badge = document.getElementById('offline-queue-badge');
+  if (!badge) return;
+
+  if (queue.length === 0) {
+    badge.style.display = 'none';
+    return;
+  }
+  badge.style.display = 'block';
+  badge.className = '';
+  badge.textContent = `⏳ ${queue.length} scan${queue.length === 1 ? '' : 's'} waiting to sync` +
+    (navigator.onLine ? '...' : ' (offline)');
+}
+
+function flushOfflineQueue() {
+  if (!currentSessionToken) return;
+  const queue = loadOfflineQueue();
+  if (queue.length === 0) return;
+
+  const item = queue[0];
+  callServer('processCheckIn', [item.qrData, currentSessionToken])
+    .then(function(response) {
+      if (response.sessionExpired) return;
+
+      const remaining = loadOfflineQueue();
+      remaining.shift();
+      saveOfflineQueue(remaining);
+      updateOfflineQueueBadge();
+
+      if (remaining.length > 0) {
+        flushOfflineQueue();
+      } else {
+        const badge = document.getElementById('offline-queue-badge');
+        if (badge) {
+          badge.className = 'synced';
+          badge.textContent = '✅ All queued scans synced.';
+          setTimeout(() => { badge.style.display = 'none'; }, 4000);
+        }
+      }
+    })
+    .catch(function() {
+      // Still offline/unreachable - leave it queued, the next tick will retry.
+    });
+}
+
+window.addEventListener('online', flushOfflineQueue);
+setInterval(function() {
+  updateOfflineQueueBadge();
+  if (navigator.onLine) flushOfflineQueue();
+}, 15000);
+
+// ================================================================================
+// SELF-SERVICE RESEND (public - no access key required)
+// ================================================================================
+
+function toggleResendPanel() {
+  const panel = document.getElementById('resend-panel');
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+
+function submitResendRequest() {
+  const input = document.getElementById('resend-email-input');
+  const btn = document.getElementById('resend-btn');
+  const statusDiv = document.getElementById('resend-status');
+  const email = input.value.trim();
+
+  if (!email) {
+    statusDiv.textContent = 'Please enter your email address.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  statusDiv.textContent = '';
+
+  callServer('resendQrPass', [email])
+    .then(function(response) {
+      btn.disabled = false;
+      btn.textContent = 'Resend My QR Pass';
+      statusDiv.textContent = response.message;
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = 'Resend My QR Pass';
+      statusDiv.textContent = 'Something went wrong. Please try again in a moment.';
+    });
+}
+
+// ================================================================================
+// MANUAL CHECK-IN FALLBACK (volunteer-only, session-gated)
+// ================================================================================
+
+function toggleManualCheckinPanel() {
+  const panel = document.getElementById('manual-checkin-panel');
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+
+function escapeForDisplay(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function runManualSearch() {
+  const input = document.getElementById('manual-search-input');
+  const resultsDiv = document.getElementById('manual-search-results');
+  const query = input.value.trim();
+
+  if (query.length < 3) {
+    resultsDiv.innerHTML = '<div class="manual-status-note">Type at least 3 characters.</div>';
+    return;
+  }
+
+  resultsDiv.innerHTML = '<div class="manual-status-note">Searching...</div>';
+
+  callServer('searchAttendees', [currentSessionToken, query])
+    .then(function(response) {
+      if (response.sessionExpired) {
+        relockScanner(response.message || 'Your session expired. Please re-enter the access key.');
+        return;
+      }
+      if (!response.success) {
+        resultsDiv.innerHTML = `<div class="manual-status-note">${escapeForDisplay(response.message)}</div>`;
+        return;
+      }
+      renderManualSearchResults(response.results);
+    })
+    .catch(function() {
+      resultsDiv.innerHTML = '<div class="manual-status-note">Search failed. Please try again.</div>';
+    });
+}
+
+function renderManualSearchResults(results) {
+  const resultsDiv = document.getElementById('manual-search-results');
+  if (!results || results.length === 0) {
+    resultsDiv.innerHTML = '<div class="manual-status-note">No matches found.</div>';
+    return;
+  }
+
+  resultsDiv.innerHTML = '';
+  results.forEach(function(r) {
+    const row = document.createElement('div');
+    row.className = 'manual-result-row';
+    row.innerHTML = `
+      <div class="manual-result-info">
+        <strong>${escapeForDisplay(r.name || '(no name)')}</strong><br>
+        ${escapeForDisplay(r.eventName)}<br>
+        ${escapeForDisplay(r.maskedEmail)} · PMI ${escapeForDisplay(r.pmiId)}
+      </div>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn-manual-checkin';
+    if (r.cancelled) {
+      btn.textContent = 'Cancelled - Override?';
+      btn.onclick = function() { submitOverrideCheckIn(r.row, btn, document.getElementById('status-display')); };
+    } else if (r.alreadyAttended) {
+      btn.textContent = 'Already In';
+      btn.disabled = true;
+    } else {
+      btn.textContent = 'Check In';
+      btn.onclick = function() { submitManualCheckIn(r.row, btn); };
+    }
+    row.appendChild(btn);
+    resultsDiv.appendChild(row);
+  });
+}
+
+// ================================================================================
+// WALK-IN REGISTRATION (volunteer-only, session-gated)
+// ================================================================================
+
+function toggleWalkinPanel() {
+  const panel = document.getElementById('walkin-panel');
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+
+function populateWalkinEventList() {
+  callServer('getUpcomingEventNames', [currentSessionToken])
+    .then(function(response) {
+      if (!response.success) return;
+      const list = document.getElementById('walkin-event-list');
+      list.innerHTML = '';
+      (response.names || []).forEach(function(name) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        list.appendChild(opt);
+      });
+    })
+    .catch(function() { /* datalist just stays empty - not critical */ });
+}
+
+function submitWalkIn() {
+  const eventName = document.getElementById('walkin-event-input').value.trim();
+  const firstName = document.getElementById('walkin-firstname-input').value.trim();
+  const lastName = document.getElementById('walkin-lastname-input').value.trim();
+  const email = document.getElementById('walkin-email-input').value.trim();
+  const mobile = document.getElementById('walkin-mobile-input').value.trim();
+  const pmiId = document.getElementById('walkin-pmi-input').value.trim();
+  const statusDiv = document.getElementById('walkin-status');
+  const btn = document.getElementById('walkin-submit-btn');
+
+  if (!eventName || !firstName || !email) {
+    statusDiv.textContent = 'Event name, first name, and email are required.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Registering...';
+  statusDiv.textContent = '';
+
+  callServer('registerWalkIn', [currentSessionToken, eventName, firstName, lastName, email, pmiId, mobile])
+    .then(function(response) {
+      btn.disabled = false;
+      btn.textContent = 'Register & Check In';
+
+      if (response.sessionExpired) {
+        relockScanner(response.message || 'Your session expired. Please re-enter the access key.');
+        return;
+      }
+
+      statusDiv.textContent = response.message;
+
+      if (response.success) {
+        document.getElementById('walkin-event-input').value = '';
+        document.getElementById('walkin-firstname-input').value = '';
+        document.getElementById('walkin-lastname-input').value = '';
+        document.getElementById('walkin-email-input').value = '';
+        document.getElementById('walkin-mobile-input').value = '';
+        document.getElementById('walkin-pmi-input').value = '';
+
+        const mainStatusDiv = document.getElementById('status-display');
+        mainStatusDiv.style.display = 'block';
+        mainStatusDiv.className = 'success';
+        mainStatusDiv.innerHTML = response.message;
+        document.getElementById('reset-button').style.display = 'block';
+        document.getElementById('launcher-card').style.display = 'none';
+      }
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = 'Register & Check In';
+      statusDiv.textContent = 'Something went wrong. Please try again.';
+    });
+}
+
+function submitManualCheckIn(row, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Checking in...';
+
+  callServer('manualCheckIn', [currentSessionToken, row])
+    .then(function(response) {
+      if (response.sessionExpired) {
+        relockScanner(response.message || 'Your session expired. Please re-enter the access key.');
+        return;
+      }
+      btn.textContent = response.success ? 'Checked In ✅' : 'Failed';
+      if (!response.success) btn.disabled = false;
+
+      const statusDiv = document.getElementById('status-display');
+      statusDiv.style.display = 'block';
+      statusDiv.className = response.success ? 'success' : 'error';
+      statusDiv.innerHTML = response.message;
+      document.getElementById('reset-button').style.display = 'block';
+      document.getElementById('launcher-card').style.display = 'none';
+
+      if (response.cancelled && response.row) {
+        const overrideBtn = document.createElement('button');
+        overrideBtn.className = 'btn-override';
+        overrideBtn.textContent = 'Override & Check In Anyway';
+        overrideBtn.onclick = function() { submitOverrideCheckIn(response.row, overrideBtn, statusDiv); };
+        statusDiv.appendChild(document.createElement('br'));
+        statusDiv.appendChild(overrideBtn);
+      }
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = 'Check In';
+    });
+}
+
+/** Shared by both the QR-scan cancelled-result and the manual-search cancelled-result. */
+function submitOverrideCheckIn(row, overrideBtn, statusDiv) {
+  overrideBtn.disabled = true;
+  overrideBtn.textContent = 'Overriding...';
+
+  callServer('overrideCancelledCheckIn', [currentSessionToken, row])
+    .then(function(response) {
+      if (response.sessionExpired) {
+        relockScanner(response.message || 'Your session expired. Please re-enter the access key.');
+        return;
+      }
+      statusDiv.style.display = 'block';
+      statusDiv.className = response.success ? 'success' : 'error';
+      statusDiv.innerHTML = response.message;
+    })
+    .catch(function() {
+      overrideBtn.disabled = false;
+      overrideBtn.textContent = 'Override & Check In Anyway';
+    });
+}
+
+</script>
+</body>
+</html>

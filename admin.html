@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#002855">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="config.js"></script>
+<script src="api.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Admin Dashboard - PMICC Checkpoint</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #eaedf2; color: #333; }
+  .gate-container { max-width: 380px; margin: 80px auto; background: #fff; padding: 30px 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center; box-sizing: border-box; }
+  .brand-title { color: #002855; font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+  .sub-title { font-size: 12px; color: #64748b; margin: 0 0 20px; }
+  input[type="password"] { width: 100%; padding: 12px; font-size: 15px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; text-align: center; }
+  button { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; background: #002855; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .gate-error { margin-top: 10px; font-size: 13px; color: #b91c1c; min-height: 16px; }
+  .gate-stepper { display: flex; gap: 4px; margin-bottom: 6px; }
+  .gate-stepper-bar { flex: 1; height: 4px; border-radius: 2px; background: #e2e8f0; transition: background 0.3s ease; }
+  .gate-stepper-bar.active { background: #002855; }
+  .gate-stepper-labels { display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-bottom: 16px; }
+  .gate-stepper-labels .gate-stepper-label-active { color: #002855; font-weight: 600; }
+  .gate-icon-field { position: relative; }
+  .gate-icon-field input { width: 100%; box-sizing: border-box; padding-top: 12px; padding-bottom: 12px; padding-left: 32px; padding-right: 12px; text-align: left; margin-bottom: 0; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; }
+  .gate-icon-field.pin-field-wrap input { padding-right: 34px; }
+  .gate-icon-field-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; z-index: 2; pointer-events: none; }
+  .gate-back-link-center { display: block; text-align: center; margin-top: 10px; font-size: 11px; color: #64748b; cursor: pointer; }
+
+  #dashboard-container { display: none; max-width: 960px; margin: 0 auto; }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .dash-title { color: #002855; font-size: 20px; font-weight: 700; margin: 0; }
+  .btn-refresh { width: auto; padding: 8px 16px; font-size: 13px; }
+  .dash-updated { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  th, td { padding: 10px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid #eef1f5; }
+  th { background: #4c158a; color: #fff; font-weight: 600; white-space: nowrap; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  .empty-note { text-align: center; padding: 30px; color: #94a3b8; font-size: 13px; }
+
+  @media (max-width: 700px) {
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+    tr { background: #fff; border-radius: 10px; margin-bottom: 12px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    td { border: none; padding: 4px 0; display: flex; justify-content: space-between; }
+    td::before { content: attr(data-label); font-weight: 600; color: #64748b; }
+  }
+
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab-btn { padding: 8px 16px; font-size: 13px; font-weight: 600; background: #fff; color: #002855; border: 1px solid #cbd5e1; border-radius: 20px; cursor: pointer; width: auto; }
+  .tab-btn.active { background: #002855; color: #fff; border-color: #002855; }
+
+  #volunteers-view, #reports-view, #branding-view, #admins-view, #auditlog-view, #events-view { display: none; }
+
+  #new-event-name, #new-event-date, #register-form-url, #register-form-event-name, #register-form-event-date { width: 100%; box-sizing: border-box; padding: 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; }
+  .register-form-link { font-size: 12px; color: #002855; text-decoration: underline; cursor: pointer; }
+  .register-form-panel { margin-top: 10px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+  .question-builder-row { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+  .question-row-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .question-type-select { flex: 0 0 150px; padding: 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; }
+  .question-title-input { flex: 1; min-width: 140px; padding: 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; }
+  .question-required-label { font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .btn-remove-question { width: auto; padding: 6px 10px; font-size: 12px; background: #fff; color: #b91c1c; border: 1px solid #fca5a5; border-radius: 6px; }
+  .question-options-wrap { margin-top: 8px; }
+  .question-options-textarea { width: 100%; box-sizing: border-box; padding: 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 60px; font-family: inherit; }
+  .question-minmax-wrap { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: #64748b; align-items: center; }
+  .question-minmax-wrap input { width: 50px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; }
+  .btn-add-question { width: auto; padding: 8px 14px; font-size: 12px; background: transparent; color: #002855; border: 1px dashed #002855; border-radius: 8px; margin-bottom: 12px; }
+  .event-status-badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .event-status-open { background: #d1fae5; color: #065f46; }
+  .event-status-closed { background: #f1f5f9; color: #64748b; }
+  .event-result-box { background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; }
+  .events-section-heading { font-size: 14px; color: #002855; margin: 0 0 4px; font-weight: 700; }
+  .add-volunteer-form { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .add-volunteer-form input, .add-volunteer-form select { flex: 1; min-width: 120px; padding: 9px 10px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px; }
+  .add-volunteer-form button { width: auto; padding: 9px 16px; font-size: 13px; }
+  .vol-actions button { width: auto; padding: 5px 10px; font-size: 12px; margin-left: 4px; }
+  .btn-vol-edit { background: #fff; color: #002855; border: 1px solid #002855; }
+  .btn-vol-delete { background: #fff; color: #b91c1c; border: 1px solid #b91c1c; }
+  .btn-vol-save { background: #065f46; }
+  .vol-inline-input { width: 90px; padding: 5px 7px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; }
+  .vol-status-msg { font-size: 12px; margin-bottom: 10px; min-height: 16px; }
+  .vol-status-msg.error { color: #b91c1c; }
+  .vol-status-msg.success { color: #065f46; }
+
+  .brand-logo { display: block; max-width: 240px; height: auto; margin: 0 auto 14px; }
+  .dash-logo { max-height: 34px; width: auto; margin-right: 10px; vertical-align: middle; }
+  .dash-header-title-row { display: flex; align-items: center; }
+
+  .pin-field-wrap { position: relative; flex: 1; min-width: 120px; }
+  .pin-field-wrap input { width: 100%; box-sizing: border-box; padding-right: 34px; }
+  .pin-eye-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px; width: auto; color: #64748b; }
+
+  .pin-masked-cell { display: flex; align-items: center; gap: 6px; }
+  .pin-reveal-btn { background: none; border: none; cursor: pointer; font-size: 13px; padding: 2px; width: auto; color: #64748b; }
+  /* ============ DARK MODE ============
+     Additive overrides only - applied via body[data-theme="dark"], toggled
+     by toggleTheme() and persisted in localStorage. */
+  body[data-theme="dark"] { background: #0f172a; color: #e2e8f0; }
+  body[data-theme="dark"] .gate-container,
+  body[data-theme="dark"] #dashboard-container table,
+  body[data-theme="dark"] .add-volunteer-form,
+  body[data-theme="dark"] .question-builder-row,
+  body[data-theme="dark"] .register-form-panel,
+  body[data-theme="dark"] #resend-panel { background: #1e293b; }
+  body[data-theme="dark"] input,
+  body[data-theme="dark"] select,
+  body[data-theme="dark"] textarea { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+  body[data-theme="dark"] th { background: #334155; }
+  body[data-theme="dark"] td { border-color: #334155; }
+  body[data-theme="dark"] tr:hover td { background: #1e293b; }
+  body[data-theme="dark"] .tab-btn { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+  body[data-theme="dark"] .tab-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+  body[data-theme="dark"] .brand-title,
+  body[data-theme="dark"] .dash-title,
+  body[data-theme="dark"] .gate-stepper-label-active,
+  body[data-theme="dark"] .events-section-heading { color: #93c5fd; }
+  body[data-theme="dark"] .sub-title,
+  body[data-theme="dark"] .dash-updated,
+  body[data-theme="dark"] .empty-note,
+  body[data-theme="dark"] .gate-stepper-label { color: #94a3b8; }
+  body[data-theme="dark"] .gate-stepper-bar { background: #334155; }
+  body[data-theme="dark"] .gate-stepper-bar.active { background: #3b82f6; }
+  body[data-theme="dark"] .btn-vol-edit { background: #1e293b; color: #93c5fd; border-color: #3b82f6; }
+  body[data-theme="dark"] .btn-vol-delete { background: #1e293b; color: #fca5a5; border-color: #b91c1c; }
+  body[data-theme="dark"] .event-status-open { background: #064e3b; color: #6ee7b7; }
+  body[data-theme="dark"] .event-status-closed { background: #334155; color: #cbd5e1; }
+  body[data-theme="dark"] .event-result-box { background: #064e3b; border-color: #10b981; color: #d1fae5; }
+  body[data-theme="dark"] .vol-status-msg.success { color: #6ee7b7; }
+  body[data-theme="dark"] .vol-status-msg.error,
+  body[data-theme="dark"] .gate-error { color: #fca5a5; }
+  body[data-theme="dark"] #theme-toggle-btn { background: #1e293b; }
+</style>
+</head>
+<body>
+
+<div class="gate-container" id="gate-view">
+  <img class="brand-logo" id="gate-logo" src="assets/logo-full.png" alt="PMI Chennai Chapter - Chapter of the Year 2025 Winner">
+  <div class="brand-title">PMICC Checkpoint</div>
+  <div class="sub-title">Admin Dashboard</div>
+
+  <div class="gate-stepper">
+    <div class="gate-stepper-bar active" id="stepper-bar-1"></div>
+    <div class="gate-stepper-bar" id="stepper-bar-2"></div>
+  </div>
+  <div class="gate-stepper-labels">
+    <span id="stepper-label-1" class="gate-stepper-label-active">Access key</span>
+    <span id="stepper-label-2">Your identity</span>
+  </div>
+
+  <div id="gate-step-1">
+    <div class="gate-icon-field pin-field-wrap">
+      <span class="gate-icon-field-icon">🔑</span>
+      <input type="password" id="admin-key-input" placeholder="Admin access key" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" onkeydown="if(event.key==='Enter'){goToGateStep2();}">
+      <button type="button" class="pin-eye-toggle" onclick="togglePinVisibility('admin-key-input', this)">👁</button>
+    </div>
+    <button id="gate-continue-btn" onclick="goToGateStep2()" style="margin-top:10px;">Continue</button>
+    <div class="gate-error" id="gate-step1-error"></div>
+  </div>
+
+  <div id="gate-step-2" style="display:none;">
+    <div class="gate-icon-field">
+      <span class="gate-icon-field-icon">👤</span>
+      <input type="text" id="admin-name-input" placeholder="Your name or email" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" onkeydown="if(event.key==='Enter'){document.getElementById('admin-pin-input').focus();}">
+    </div>
+    <div class="gate-icon-field pin-field-wrap" style="margin-top:8px;">
+      <span class="gate-icon-field-icon">🔒</span>
+      <input type="password" id="admin-pin-input" placeholder="Your PIN" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" onkeydown="if(event.key==='Enter'){unlockDashboard();}">
+      <button type="button" class="pin-eye-toggle" onclick="togglePinVisibility('admin-pin-input', this)">👁</button>
+    </div>
+    <button id="unlock-btn" onclick="unlockDashboard()" style="margin-top:10px;">Unlock Dashboard</button>
+    <div class="gate-error" id="gate-error"></div>
+    <div style="display:flex;justify-content:center;gap:14px;margin-top:10px;">
+      <span class="gate-back-link-center" style="margin-top:0;" onclick="goToGateStep1()">&larr; back to access key</span>
+      <span class="gate-back-link-center" style="margin-top:0;" onclick="toggleForgotPinPanel()">Forgot PIN?</span>
+    </div>
+    <div id="forgot-pin-panel" style="display:none;margin-top:12px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+      <input type="text" id="forgot-pin-input" placeholder="Your name or email" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text">
+      <button type="button" id="forgot-pin-btn" onclick="submitForgotPin()" style="width:100%;margin-top:8px;">Send Me a New PIN</button>
+      <div class="gate-error" id="forgot-pin-status" style="color:#065f46;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="dashboard-container">
+  <div class="dash-header">
+    <div class="dash-header-title-row">
+      <img class="dash-logo" id="dash-logo" src="assets/logo-chapter.png" alt="PMI Chennai Chapter">
+      <div>
+        <h1 class="dash-title">Admin Dashboard</h1>
+        <div class="dash-updated" id="last-updated"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-refresh" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+      <button class="btn-refresh" onclick="loadActiveTab()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-attendance" onclick="switchTab('attendance')">Attendance</button>
+    <button class="tab-btn" id="tab-btn-volunteers" onclick="switchTab('volunteers')">Volunteers</button>
+    <button class="tab-btn" id="tab-btn-reports" onclick="switchTab('reports')">Reports</button>
+    <button class="tab-btn" id="tab-btn-branding" onclick="switchTab('branding')">Branding</button>
+    <button class="tab-btn" id="tab-btn-events" onclick="switchTab('events')">Events</button>
+    <button class="tab-btn super-admin-only" id="tab-btn-admins" onclick="switchTab('admins')" style="display:none;">Admins</button>
+    <button class="tab-btn super-admin-only" id="tab-btn-auditlog" onclick="switchTab('auditlog')" style="display:none;">Audit Log</button>
+  </div>
+
+  <div id="attendance-view">
+    <div id="table-wrapper"></div>
+  </div>
+
+  <div id="volunteers-view">
+    <div class="add-volunteer-form">
+      <input type="text" id="new-vol-name" placeholder="Name">
+      <div class="pin-field-wrap">
+        <input type="password" id="new-vol-pin" placeholder="PIN (min 6 digits)">
+        <button type="button" class="pin-eye-toggle" onclick="togglePinVisibility('new-vol-pin', this)">👁</button>
+      </div>
+      <button onclick="submitAddVolunteer()">+ Add Volunteer</button>
+    </div>
+    <div class="vol-status-msg" id="vol-status-msg"></div>
+    <div id="volunteers-table-wrapper"></div>
+  </div>
+
+  <div id="reports-view">
+    <p style="font-size:13px;color:#64748b;margin-top:0;">Send a CSV attendance report for a completed event from the last 4 weeks to any email address.</p>
+    <div class="add-volunteer-form">
+      <select id="report-event-select" style="flex:2;min-width:200px;">
+        <option value="">Loading events...</option>
+      </select>
+      <input type="email" id="report-recipient-input" placeholder="Recipient email">
+      <button onclick="submitOnDemandReport()">Send Report</button>
+    </div>
+    <div class="vol-status-msg" id="report-status-msg"></div>
+  </div>
+
+  <div id="branding-view">
+    <p style="font-size:13px;color:#64748b;margin-top:0;">Replace the logo shown on both the scanner and this dashboard. Image must be under 30KB (compress at tinypng.com if needed) - this is a hard limit, since the logo is stored in a single spreadsheet cell.</p>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;color:#475569;margin-bottom:6px;">Current logo:</div>
+      <img id="current-logo-preview" style="max-width:180px;max-height:70px;border:1px solid #e2e8f0;border-radius:6px;padding:8px;background:#f8fafc;display:none;" alt="Current logo">
+      <span id="no-logo-note" style="font-size:12px;color:#94a3b8;">No logo set yet.</span>
+    </div>
+    <input type="file" id="new-logo-input" accept="image/*" onchange="previewNewLogo(this)">
+    <div id="new-logo-preview-wrap" style="display:none;margin-top:10px;">
+      <div style="font-size:12px;color:#475569;margin-bottom:6px;">New logo preview (<span id="new-logo-size"></span>):</div>
+      <img id="new-logo-preview" style="max-width:180px;max-height:70px;border:1px solid #e2e8f0;border-radius:6px;padding:8px;background:#f8fafc;" alt="New logo preview">
+    </div>
+    <button id="upload-logo-btn" onclick="submitLogoUpload()" style="width:auto;padding:9px 16px;font-size:13px;margin-top:12px;" disabled>Upload New Logo</button>
+    <div class="vol-status-msg" id="branding-status-msg"></div>
+  </div>
+
+  <div id="events-view">
+    <div class="events-section-heading">Create a new event</div>
+    <p style="font-size:13px;color:#64748b;margin:0 0 12px;">Creates a Google Form with the fixed core fields (First Name, Second Name, Email ID, Mobile, PMI ID) plus any custom questions below. Registrations feed into this spreadsheet automatically - no manual linking needed.</p>
+
+    <input type="text" id="new-event-name" placeholder="Event name">
+    <input type="date" id="new-event-date">
+
+    <div id="custom-questions-list"></div>
+    <button type="button" class="btn-add-question" onclick="addQuestionRow()">+ Add a question</button>
+
+    <button id="create-event-btn" onclick="submitCreateEvent()">Create Event Form</button>
+    <div class="vol-status-msg" id="create-event-status"></div>
+    <div id="create-event-result" style="display:none;"></div>
+
+    <div style="margin-top:14px;">
+      <a class="register-form-link" onclick="toggleRegisterFormPanel()">Have a form you made manually in Google Forms? Register it here</a>
+      <div id="register-form-panel" class="register-form-panel" style="display:none;">
+        <p style="font-size:12px;color:#64748b;margin:0 0 10px;">The form must already have its responses linked to this spreadsheet (Responses tab &rarr; Sheets icon &rarr; link to this spreadsheet) before registering it here.</p>
+        <input type="text" id="register-form-url" placeholder="Form edit URL">
+        <input type="text" id="register-form-event-name" placeholder="Event name">
+        <input type="date" id="register-form-event-date">
+        <button id="register-form-btn" onclick="submitRegisterExistingForm()" style="width:auto;padding:9px 16px;font-size:13px;">Register Form</button>
+        <div class="vol-status-msg" id="register-form-status"></div>
+      </div>
+    </div>
+
+    <hr style="margin:22px 0;border:none;border-top:1px solid #e2e8f0;">
+
+    <div class="events-section-heading">Existing events</div>
+    <div id="events-table-wrapper"></div>
+  </div>
+
+  <div id="admins-view">
+    <div class="add-volunteer-form">
+      <input type="text" id="new-admin-name" placeholder="Name">
+      <div class="pin-field-wrap">
+        <input type="password" id="new-admin-pin" placeholder="PIN (min 6 digits)">
+        <button type="button" class="pin-eye-toggle" onclick="togglePinVisibility('new-admin-pin', this)">👁</button>
+      </div>
+      <input type="email" id="new-admin-email" placeholder="Email (@pmi-chennai.org)">
+      <select id="new-admin-tier">
+        <option value="Admin">Admin</option>
+        <option value="SuperAdmin">Super Admin</option>
+      </select>
+      <button onclick="submitAddAdmin()">+ Add Admin</button>
+    </div>
+    <div class="vol-status-msg" id="admin-status-msg"></div>
+    <div id="admins-table-wrapper"></div>
+  </div>
+
+  <div id="auditlog-view">
+    <p style="font-size:13px;color:#64748b;margin-top:0;">Most recent 500 actions, newest first. Read-only.</p>
+    <div id="auditlog-table-wrapper"></div>
+  </div>
+</div>
+
+<script>
+  // ================================================================================
+  // SERVER CALL LAYER — replaces google.script.run for the standalone app.
+  // ================================================================================
+  
+  // Fetches the logo before login (unauthenticated) — replaces the old
+  // server-side <?!= logoDataUri ?> scriptlet, which only works when Apps
+  // Script itself renders the page template. A static file can't do that,
+  // so this calls the new getPublicBrandLogo() function instead. See
+  // public_logo_addition.gs.
+  function loadGateLogo() {
+    if (!window.PMICC_CONFIG.USE_SERVER_LOGO) return;
+    callServer('getPublicBrandLogo', [])
+      .then(function(response) {
+        if (response.dataUri) {
+          document.getElementById('gate-logo').src = response.dataUri;
+          document.getElementById('gate-logo').style.display = 'block';
+        }
+      })
+      .catch(function() { /* no logo yet, or offline — leave hidden */ });
+  }
+  window.addEventListener('load', loadGateLogo);
+
+  // ================================================================================
+  // Everything below mirrors production admin.html, with google.script.run
+  // calls swapped for callServer('fnName', [args]). Behavior unchanged.
+  // ================================================================================
+
+  let adminToken = null;
+  let adminName = null;
+  let adminTier = null;
+  let refreshInterval = null;
+
+  function applyStoredTheme() {
+    const stored = localStorage.getItem('pmicc_admin_theme') || 'light';
+    document.body.setAttribute('data-theme', stored);
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) btn.textContent = stored === 'dark' ? '☀️' : '🌙';
+  }
+
+  function toggleTheme() {
+    const current = document.body.getAttribute('data-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', next);
+    localStorage.setItem('pmicc_admin_theme', next);
+    document.getElementById('theme-toggle-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+  applyStoredTheme();
+
+  function togglePinVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁';
+    }
+  }
+
+  function goToGateStep2() {
+    const key = document.getElementById('admin-key-input').value.trim();
+    const errDiv = document.getElementById('gate-step1-error');
+    if (!key) { errDiv.textContent = 'Please enter the admin access key.'; return; }
+    errDiv.textContent = '';
+    document.getElementById('gate-step-1').style.display = 'none';
+    document.getElementById('gate-step-2').style.display = 'block';
+    document.getElementById('stepper-bar-2').classList.add('active');
+    document.getElementById('stepper-label-2').classList.add('gate-stepper-label-active');
+    document.getElementById('stepper-label-1').classList.remove('gate-stepper-label-active');
+    document.getElementById('admin-name-input').focus();
+  }
+
+  function goToGateStep1() {
+    document.getElementById('gate-step-2').style.display = 'none';
+    document.getElementById('gate-step-1').style.display = 'block';
+    document.getElementById('gate-error').textContent = '';
+    document.getElementById('stepper-bar-2').classList.remove('active');
+    document.getElementById('stepper-label-2').classList.remove('gate-stepper-label-active');
+    document.getElementById('admin-name-input').value = '';
+    document.getElementById('admin-pin-input').value = '';
+    document.getElementById('admin-key-input').focus();
+  }
+
+  function toggleForgotPinPanel() {
+    const panel = document.getElementById('forgot-pin-panel');
+    panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+  }
+
+  function submitForgotPin() {
+    const input = document.getElementById('forgot-pin-input');
+    const btn = document.getElementById('forgot-pin-btn');
+    const statusDiv = document.getElementById('forgot-pin-status');
+    const value = input.value.trim();
+    if (!value) { statusDiv.textContent = 'Enter your name or email first.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    statusDiv.textContent = '';
+
+    callServer('requestAdminPinReset', [value])
+      .then(function(response) {
+        btn.disabled = false;
+        btn.textContent = 'Send Me a New PIN';
+        statusDiv.textContent = response.message;
+        input.value = '';
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Send Me a New PIN';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function unlockDashboard() {
+    const keyInput = document.getElementById('admin-key-input');
+    const nameInput = document.getElementById('admin-name-input');
+    const pinInput = document.getElementById('admin-pin-input');
+    const btn = document.getElementById('unlock-btn');
+    const errDiv = document.getElementById('gate-error');
+    const key = keyInput.value.trim();
+    const name = nameInput.value.trim();
+    const pin = pinInput.value.trim();
+
+    if (!key) { errDiv.textContent = 'Please enter the admin access key.'; return; }
+    if (!name) { errDiv.textContent = 'Please enter your name.'; return; }
+    if (!pin) { errDiv.textContent = 'Please enter your PIN.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+    errDiv.textContent = '';
+
+    callServer('verifyAdminAccessKey', [key, name, pin])
+      .then(function(response) {
+        btn.disabled = false;
+        btn.textContent = 'Unlock Dashboard';
+
+        if (response.success) {
+          adminToken = response.token;
+          adminName = response.adminName;
+          adminTier = response.adminTier;
+          document.querySelectorAll('.super-admin-only').forEach(function(el) {
+            el.style.display = (adminTier === 'SuperAdmin') ? '' : 'none';
+          });
+          document.getElementById('gate-view').style.display = 'none';
+          document.getElementById('dashboard-container').style.display = 'block';
+          loadDashLogo();
+          loadActiveTab();
+          refreshInterval = setInterval(loadActiveTab, 30000);
+          resetAdminIdleTimer();
+        } else {
+          errDiv.textContent = response.message || 'Incorrect key.';
+          pinInput.value = '';
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Unlock Dashboard';
+        errDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function loadDashLogo() {
+    if (!window.PMICC_CONFIG.USE_SERVER_LOGO) return;
+    callServer('getCurrentLogoInfo', [adminToken])
+      .then(function(response) {
+        if (response.dataUri) {
+          document.getElementById('dash-logo').src = response.dataUri;
+          document.getElementById('dash-logo').style.display = 'inline-block';
+        }
+      })
+      .catch(function() { /* leave hidden */ });
+  }
+
+  let currentTab = 'attendance';
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-btn-attendance').classList.toggle('active', tab === 'attendance');
+    document.getElementById('tab-btn-volunteers').classList.toggle('active', tab === 'volunteers');
+    document.getElementById('tab-btn-reports').classList.toggle('active', tab === 'reports');
+    document.getElementById('tab-btn-branding').classList.toggle('active', tab === 'branding');
+    document.getElementById('tab-btn-events').classList.toggle('active', tab === 'events');
+    document.getElementById('tab-btn-admins').classList.toggle('active', tab === 'admins');
+    document.getElementById('tab-btn-auditlog').classList.toggle('active', tab === 'auditlog');
+    document.getElementById('attendance-view').style.display = tab === 'attendance' ? 'block' : 'none';
+    document.getElementById('volunteers-view').style.display = tab === 'volunteers' ? 'block' : 'none';
+    document.getElementById('reports-view').style.display = tab === 'reports' ? 'block' : 'none';
+    document.getElementById('branding-view').style.display = tab === 'branding' ? 'block' : 'none';
+    document.getElementById('events-view').style.display = tab === 'events' ? 'block' : 'none';
+    document.getElementById('admins-view').style.display = tab === 'admins' ? 'block' : 'none';
+    document.getElementById('auditlog-view').style.display = tab === 'auditlog' ? 'block' : 'none';
+    loadActiveTab();
+  }
+
+  function loadActiveTab() {
+    if (currentTab === 'attendance') loadDashboard();
+    else if (currentTab === 'volunteers') loadVolunteers();
+    else if (currentTab === 'reports') loadReportEvents();
+    else if (currentTab === 'events') loadEventsList();
+    else if (currentTab === 'admins') loadAdmins();
+    else if (currentTab === 'auditlog') loadAuditLog();
+    else loadCurrentLogoPreview();
+  }
+
+  function loadDashboard() {
+    callServer('getAdminDashboardData', [adminToken])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        renderTable(response.events || []);
+        document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+      })
+      .catch(function() {
+        document.getElementById('last-updated').textContent = 'Refresh failed - will retry automatically.';
+      });
+  }
+
+  function handleSessionExpired(message) {
+    clearInterval(refreshInterval);
+    if (adminIdleTimer) clearTimeout(adminIdleTimer);
+    document.getElementById('dashboard-container').style.display = 'none';
+    document.getElementById('gate-view').style.display = 'block';
+    document.getElementById('gate-error').textContent = message || 'Session expired. Please unlock again.';
+    document.getElementById('admin-key-input').value = '';
+    document.getElementById('admin-name-input').value = '';
+    document.getElementById('admin-pin-input').value = '';
+    goToGateStep1();
+    adminToken = null;
+    adminName = null;
+    adminTier = null;
+  }
+
+  // --- Idle auto-logout, mirrors the scanner's pattern: any tap/click/key
+  // while a session is active resets a 30-minute countdown; letting it
+  // expire signs the admin out automatically. ---
+  const ADMIN_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+  let adminIdleTimer = null;
+
+  function resetAdminIdleTimer() {
+    if (adminIdleTimer) clearTimeout(adminIdleTimer);
+    if (!adminToken) return;
+    adminIdleTimer = setTimeout(function() {
+      handleSessionExpired('Signed out due to 30 minutes of inactivity. Please unlock again.');
+    }, ADMIN_IDLE_TIMEOUT_MS);
+  }
+
+  ['click', 'touchstart', 'keydown'].forEach(function(evt) {
+    document.addEventListener(evt, function() { if (adminToken) resetAdminIdleTimer(); });
+  });
+
+  // ---------------- Volunteers tab ----------------
+
+  function loadVolunteers() {
+    callServer('getVolunteersList', [adminToken])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        renderVolunteersTable(response.volunteers || []);
+        document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+      })
+      .catch(function() {
+        document.getElementById('last-updated').textContent = 'Refresh failed - will retry automatically.';
+      });
+  }
+
+  function renderVolunteersTable(volunteers) {
+    const wrapper = document.getElementById('volunteers-table-wrapper');
+    wrapper.innerHTML = '';
+
+    if (!volunteers.length) {
+      wrapper.innerHTML = '<div class="empty-note">No volunteers added yet.</div>';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.innerHTML = '<thead><tr><th>Name</th><th>PIN</th><th></th></tr></thead>';
+    const tbody = document.createElement('tbody');
+
+    volunteers.forEach(function(v) {
+      const tr = document.createElement('tr');
+      tr.id = 'vol-row-' + v.row;
+
+      const nameTd = document.createElement('td');
+      nameTd.className = 'vol-name-cell';
+      nameTd.setAttribute('data-label', 'Name');
+      nameTd.textContent = v.name;
+
+      const pinTd = document.createElement('td');
+      pinTd.className = 'vol-pin-cell';
+      pinTd.setAttribute('data-label', 'PIN');
+
+      const pinWrap = document.createElement('span');
+      pinWrap.className = 'pin-masked-cell';
+
+      const pinValueSpan = document.createElement('span');
+      pinValueSpan.className = 'pin-value-span';
+      pinValueSpan.textContent = '•'.repeat(v.pin.length || 6);
+      pinValueSpan.dataset.pin = v.pin;
+      pinValueSpan.dataset.revealed = 'false';
+
+      const revealBtn = document.createElement('button');
+      revealBtn.type = 'button';
+      revealBtn.className = 'pin-reveal-btn';
+      revealBtn.textContent = '👁';
+      revealBtn.onclick = function() {
+        const revealed = pinValueSpan.dataset.revealed === 'true';
+        pinValueSpan.textContent = revealed ? '•'.repeat(v.pin.length || 6) : v.pin;
+        pinValueSpan.dataset.revealed = revealed ? 'false' : 'true';
+      };
+
+      pinWrap.appendChild(pinValueSpan);
+      pinWrap.appendChild(revealBtn);
+      pinTd.appendChild(pinWrap);
+
+      const actionsTd = document.createElement('td');
+      actionsTd.className = 'vol-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-vol-edit';
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = function() { startEditVolunteer(v.row, v.name, v.pin); };
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn-vol-delete';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.onclick = function() { submitDeleteVolunteer(v.row); };
+
+      actionsTd.appendChild(editBtn);
+      actionsTd.appendChild(deleteBtn);
+
+      tr.appendChild(nameTd);
+      tr.appendChild(pinTd);
+      tr.appendChild(actionsTd);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+  }
+
+  function startEditVolunteer(row, name, pin) {
+    const tr = document.getElementById('vol-row-' + row);
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'vol-inline-input';
+    nameInput.id = 'edit-name-' + row;
+    nameInput.value = name;
+
+    const pinInput = document.createElement('input');
+    pinInput.type = 'password';
+    pinInput.className = 'vol-inline-input';
+    pinInput.id = 'edit-pin-' + row;
+    pinInput.value = pin;
+
+    const pinInputWrap = document.createElement('span');
+    pinInputWrap.className = 'pin-field-wrap';
+    pinInputWrap.style.display = 'inline-block';
+    const pinEditToggle = document.createElement('button');
+    pinEditToggle.type = 'button';
+    pinEditToggle.className = 'pin-eye-toggle';
+    pinEditToggle.textContent = '👁';
+    pinEditToggle.onclick = function() { togglePinVisibility('edit-pin-' + row, pinEditToggle); };
+    pinInputWrap.appendChild(pinInput);
+    pinInputWrap.appendChild(pinEditToggle);
+
+    const nameCell = tr.querySelector('.vol-name-cell');
+    nameCell.innerHTML = '';
+    nameCell.appendChild(nameInput);
+
+    const pinCell = tr.querySelector('.vol-pin-cell');
+    pinCell.innerHTML = '';
+    pinCell.appendChild(pinInputWrap);
+
+    const actionsCell = tr.querySelector('.vol-actions');
+    actionsCell.innerHTML = '';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-vol-save';
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick = function() { submitUpdateVolunteer(row); };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-vol-edit';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick = function() { loadVolunteers(); };
+
+    actionsCell.appendChild(saveBtn);
+    actionsCell.appendChild(cancelBtn);
+  }
+
+  function submitAddVolunteer() {
+    const name = document.getElementById('new-vol-name').value.trim();
+    const pin = document.getElementById('new-vol-pin').value.trim();
+    const statusDiv = document.getElementById('vol-status-msg');
+
+    callServer('addVolunteer', [adminToken, name, pin])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        if (response.success) {
+          document.getElementById('new-vol-name').value = '';
+          document.getElementById('new-vol-pin').value = '';
+          loadVolunteers();
+        }
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function submitUpdateVolunteer(row) {
+    const name = document.getElementById('edit-name-' + row).value.trim();
+    const pin = document.getElementById('edit-pin-' + row).value.trim();
+    const statusDiv = document.getElementById('vol-status-msg');
+
+    callServer('updateVolunteer', [adminToken, row, name, pin])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        loadVolunteers();
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function submitDeleteVolunteer(row) {
+    if (!confirm('Remove this volunteer? They will no longer be able to unlock the scanner with this PIN.')) return;
+
+    const statusDiv = document.getElementById('vol-status-msg');
+    callServer('deleteVolunteer', [adminToken, row])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        loadVolunteers();
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  // ---------------- Admins tab (Super Admin only) ----------------
+
+  function loadAdmins() {
+    callServer('getAdminsList', [adminToken])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        renderAdminsTable(response.admins || []);
+      })
+      .catch(function() {
+        document.getElementById('admins-table-wrapper').innerHTML = '<div class="empty-note">Failed to load admins.</div>';
+      });
+  }
+
+  function renderAdminsTable(admins) {
+    const wrapper = document.getElementById('admins-table-wrapper');
+    wrapper.innerHTML = '';
+
+    if (!admins.length) {
+      wrapper.innerHTML = '<div class="empty-note">No admins yet.</div>';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.innerHTML = '<thead><tr><th>Name</th><th>Email</th><th>Tier</th><th>PIN</th><th></th></tr></thead>';
+    const tbody = document.createElement('tbody');
+
+    admins.forEach(function(a) {
+      const tr = document.createElement('tr');
+      tr.id = 'admin-row-' + a.row;
+
+      const nameTd = document.createElement('td');
+      nameTd.className = 'admin-name-cell';
+      nameTd.setAttribute('data-label', 'Name');
+      nameTd.textContent = a.name;
+
+      const emailTd = document.createElement('td');
+      emailTd.className = 'admin-email-cell';
+      emailTd.setAttribute('data-label', 'Email');
+      emailTd.textContent = a.email || '—';
+
+      const tierTd = document.createElement('td');
+      tierTd.className = 'admin-tier-cell';
+      tierTd.setAttribute('data-label', 'Tier');
+      tierTd.textContent = a.tier === 'SuperAdmin' ? 'Super Admin' : 'Admin';
+
+      const pinTd = document.createElement('td');
+      pinTd.className = 'admin-pin-cell';
+      pinTd.setAttribute('data-label', 'PIN');
+      const pinWrap = document.createElement('span');
+      pinWrap.className = 'pin-masked-cell';
+      const pinValueSpan = document.createElement('span');
+      pinValueSpan.textContent = '•'.repeat(a.pin.length || 6);
+      pinValueSpan.dataset.revealed = 'false';
+      const revealBtn = document.createElement('button');
+      revealBtn.type = 'button';
+      revealBtn.className = 'pin-reveal-btn';
+      revealBtn.textContent = '👁';
+      revealBtn.onclick = function() {
+        const revealed = pinValueSpan.dataset.revealed === 'true';
+        pinValueSpan.textContent = revealed ? '•'.repeat(a.pin.length || 6) : a.pin;
+        pinValueSpan.dataset.revealed = revealed ? 'false' : 'true';
+      };
+      pinWrap.appendChild(pinValueSpan);
+      pinWrap.appendChild(revealBtn);
+      pinTd.appendChild(pinWrap);
+
+      const actionsTd = document.createElement('td');
+      actionsTd.className = 'vol-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-vol-edit';
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = function() { startEditAdmin(a.row, a.name, a.pin, a.email, a.tier); };
+      const resetPinBtn = document.createElement('button');
+      resetPinBtn.className = 'btn-vol-edit';
+      resetPinBtn.textContent = 'Reset PIN';
+      resetPinBtn.onclick = function() { submitResetAdminPin(a.row, a.name); };
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn-vol-delete';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.onclick = function() { submitDeleteAdmin(a.row); };
+      actionsTd.appendChild(editBtn);
+      actionsTd.appendChild(resetPinBtn);
+      actionsTd.appendChild(deleteBtn);
+
+      tr.appendChild(nameTd);
+      tr.appendChild(emailTd);
+      tr.appendChild(tierTd);
+      tr.appendChild(pinTd);
+      tr.appendChild(actionsTd);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+  }
+
+  function startEditAdmin(row, name, pin, email, tier) {
+    const tr = document.getElementById('admin-row-' + row);
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'vol-inline-input';
+    nameInput.id = 'edit-admin-name-' + row;
+    nameInput.value = name;
+
+    const emailInput = document.createElement('input');
+    emailInput.type = 'email';
+    emailInput.className = 'vol-inline-input';
+    emailInput.id = 'edit-admin-email-' + row;
+    emailInput.value = email || '';
+
+    const tierSelect = document.createElement('select');
+    tierSelect.id = 'edit-admin-tier-' + row;
+    tierSelect.innerHTML = '<option value="Admin">Admin</option><option value="SuperAdmin">Super Admin</option>';
+    tierSelect.value = tier;
+
+    const pinInput = document.createElement('input');
+    pinInput.type = 'password';
+    pinInput.className = 'vol-inline-input';
+    pinInput.id = 'edit-admin-pin-' + row;
+    pinInput.value = pin;
+
+    tr.querySelector('.admin-name-cell').innerHTML = '';
+    tr.querySelector('.admin-name-cell').appendChild(nameInput);
+    tr.querySelector('.admin-email-cell').innerHTML = '';
+    tr.querySelector('.admin-email-cell').appendChild(emailInput);
+    tr.querySelector('.admin-tier-cell').innerHTML = '';
+    tr.querySelector('.admin-tier-cell').appendChild(tierSelect);
+    tr.querySelector('.admin-pin-cell').innerHTML = '';
+    tr.querySelector('.admin-pin-cell').appendChild(pinInput);
+
+    const actionsCell = tr.querySelector('.vol-actions');
+    actionsCell.innerHTML = '';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-vol-save';
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick = function() { submitUpdateAdmin(row); };
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-vol-edit';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick = function() { loadAdmins(); };
+    actionsCell.appendChild(saveBtn);
+    actionsCell.appendChild(cancelBtn);
+  }
+
+  function submitAddAdmin() {
+    const name = document.getElementById('new-admin-name').value.trim();
+    const pin = document.getElementById('new-admin-pin').value.trim();
+    const email = document.getElementById('new-admin-email').value.trim();
+    const tier = document.getElementById('new-admin-tier').value;
+    const statusDiv = document.getElementById('admin-status-msg');
+
+    callServer('addAdmin', [adminToken, name, pin, email, tier])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        if (response.success) {
+          document.getElementById('new-admin-name').value = '';
+          document.getElementById('new-admin-pin').value = '';
+          document.getElementById('new-admin-email').value = '';
+          document.getElementById('new-admin-tier').value = 'Admin';
+          loadAdmins();
+        }
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function submitUpdateAdmin(row) {
+    const name = document.getElementById('edit-admin-name-' + row).value.trim();
+    const pin = document.getElementById('edit-admin-pin-' + row).value.trim();
+    const email = document.getElementById('edit-admin-email-' + row).value.trim();
+    const tier = document.getElementById('edit-admin-tier-' + row).value;
+    const statusDiv = document.getElementById('admin-status-msg');
+
+    callServer('updateAdmin', [adminToken, row, name, pin, email, tier])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        loadAdmins();
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function submitDeleteAdmin(row) {
+    if (!confirm('Remove this admin? They will no longer be able to log in.')) return;
+
+    const statusDiv = document.getElementById('admin-status-msg');
+    callServer('deleteAdmin', [adminToken, row])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        loadAdmins();
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function submitResetAdminPin(row, name) {
+    if (!confirm('Generate a new random PIN for ' + name + '? Their current PIN will stop working immediately.')) return;
+
+    const statusDiv = document.getElementById('admin-status-msg');
+    callServer('resetAdminPin', [adminToken, row])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        loadAdmins();
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  // ---------------- Audit Log tab (Super Admin only, read-only) ----------------
+
+  function loadAuditLog() {
+    callServer('getAuditLog', [adminToken])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        renderAuditLogTable(response.entries || []);
+      })
+      .catch(function() {
+        document.getElementById('auditlog-table-wrapper').innerHTML = '<div class="empty-note">Failed to load audit log.</div>';
+      });
+  }
+
+  function renderAuditLogTable(entries) {
+    const wrapper = document.getElementById('auditlog-table-wrapper');
+    if (!entries.length) {
+      wrapper.innerHTML = '<div class="empty-note">No audit entries yet.</div>';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Time</th><th>Actor</th><th>Type</th><th>Action</th><th>Target</th><th>Details</th><th>OK</th></tr></thead><tbody>';
+    entries.forEach(function(e) {
+      const time = e.timestamp ? new Date(e.timestamp).toLocaleString() : '—';
+      html += '<tr>' +
+        '<td data-label="Time">' + escapeForDisplay(time) + '</td>' +
+        '<td data-label="Actor">' + escapeForDisplay(e.actorName) + '</td>' +
+        '<td data-label="Type">' + escapeForDisplay(e.actorType) + (e.actorTier && e.actorTier !== '-' ? ' (' + escapeForDisplay(e.actorTier) + ')' : '') + '</td>' +
+        '<td data-label="Action">' + escapeForDisplay(e.action) + '</td>' +
+        '<td data-label="Target">' + escapeForDisplay(e.target) + '</td>' +
+        '<td data-label="Details">' + escapeForDisplay(e.details) + '</td>' +
+        '<td class="num" data-label="OK">' + (e.success ? '✅' : '❌') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrapper.innerHTML = html;
+  }
+
+  // ---------------- Events tab ----------------
+
+  let questionRowCounter = 0;
+
+  function addQuestionRow() {
+    questionRowCounter++;
+    const id = questionRowCounter;
+    const container = document.getElementById('custom-questions-list');
+    const row = document.createElement('div');
+    row.className = 'question-builder-row';
+    row.id = 'question-row-' + id;
+    row.innerHTML =
+      '<div class="question-row-top">' +
+        '<select class="question-type-select" onchange="onQuestionTypeChange(' + id + ')">' +
+          '<option value="short">Short answer</option>' +
+          '<option value="long">Long answer</option>' +
+          '<option value="choice">Multiple choice (pick 1)</option>' +
+          '<option value="checkbox">Checkboxes (pick multiple)</option>' +
+        '</select>' +
+        '<input type="text" class="question-title-input" placeholder="Question text">' +
+        '<label class="question-required-label"><input type="checkbox" class="question-required-checkbox"> Required</label>' +
+        '<button type="button" class="btn-remove-question" onclick="removeQuestionRow(' + id + ')">✕</button>' +
+      '</div>' +
+      '<div class="question-options-wrap" id="question-options-wrap-' + id + '" style="display:none;">' +
+        '<textarea class="question-options-textarea" placeholder="One option per line"></textarea>' +
+        '<div class="question-minmax-wrap" id="question-minmax-wrap-' + id + '" style="display:none;">' +
+          '<label>Min select <input type="number" class="question-min-input" min="1" value="1"></label>' +
+          '<label>Max select <input type="number" class="question-max-input" min="1" value="1"></label>' +
+        '</div>' +
+      '</div>';
+    container.appendChild(row);
+  }
+
+  function onQuestionTypeChange(id) {
+    const row = document.getElementById('question-row-' + id);
+    const type = row.querySelector('.question-type-select').value;
+    document.getElementById('question-options-wrap-' + id).style.display = (type === 'choice' || type === 'checkbox') ? 'block' : 'none';
+    document.getElementById('question-minmax-wrap-' + id).style.display = (type === 'checkbox') ? 'flex' : 'none';
+  }
+
+  function removeQuestionRow(id) {
+    const row = document.getElementById('question-row-' + id);
+    if (row) row.remove();
+  }
+
+  function collectCustomQuestions() {
+    const rows = document.querySelectorAll('.question-builder-row');
+    const questions = [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const type = row.querySelector('.question-type-select').value;
+      const title = row.querySelector('.question-title-input').value.trim();
+      const required = row.querySelector('.question-required-checkbox').checked;
+      if (!title) continue;
+
+      const q = { type: type, title: title, required: required };
+      if (type === 'choice' || type === 'checkbox') {
+        const optionsText = row.querySelector('.question-options-textarea').value;
+        q.options = optionsText.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+        if (q.options.length < 2) {
+          return { questions: null, error: '"' + title + '" needs at least 2 options.' };
+        }
+      }
+      if (type === 'checkbox') {
+        q.minSelect = parseInt(row.querySelector('.question-min-input').value, 10) || 1;
+        q.maxSelect = parseInt(row.querySelector('.question-max-input').value, 10) || q.options.length;
+        if (q.minSelect > q.maxSelect) {
+          return { questions: null, error: '"' + title + '": min select can\'t be greater than max select.' };
+        }
+      }
+      questions.push(q);
+    }
+    return { questions: questions, error: null };
+  }
+
+  function submitCreateEvent() {
+    const eventName = document.getElementById('new-event-name').value.trim();
+    const eventDate = document.getElementById('new-event-date').value;
+    const statusDiv = document.getElementById('create-event-status');
+    const resultDiv = document.getElementById('create-event-result');
+    const btn = document.getElementById('create-event-btn');
+
+    if (!eventName) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event name is required.'; return; }
+    if (!eventDate) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event date is required.'; return; }
+
+    const collected = collectCustomQuestions();
+    if (collected.error) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = collected.error; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+    statusDiv.className = 'vol-status-msg';
+    statusDiv.textContent = '';
+    resultDiv.style.display = 'none';
+
+    callServer('createEventForm', [adminToken, eventName, eventDate, collected.questions])
+      .then(function(response) {
+        btn.disabled = false;
+        btn.textContent = 'Create Event Form';
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        if (response.success) {
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML =
+            '<div class="event-result-box">' +
+              '<div style="font-weight:700;color:#065f46;margin-bottom:6px;">✅ ' + escapeForDisplay(response.eventName) + ' created</div>' +
+              '<div style="margin-bottom:8px;">' +
+                '<a href="' + response.formViewUrl + '" target="_blank">Open registration form</a> &middot; ' +
+                '<a href="' + response.formEditUrl + '" target="_blank">Edit questions in Google Forms</a>' +
+              '</div>' +
+              '<button type="button" id="copy-link-btn" onclick="copyEventLink(\'' + response.formViewUrl + '\')" style="width:auto;padding:6px 12px;font-size:11px;">Copy registration link</button>' +
+            '</div>';
+          document.getElementById('new-event-name').value = '';
+          document.getElementById('new-event-date').value = '';
+          document.getElementById('custom-questions-list').innerHTML = '';
+          loadEventsList();
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Create Event Form';
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function copyEventLink(url) {
+    const btn = document.getElementById('copy-link-btn');
+    const original = btn.textContent;
+    function showCopied() {
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = original; }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(showCopied).catch(function() { window.prompt('Copy this link:', url); });
+    } else {
+      window.prompt('Copy this link:', url);
+    }
+  }
+
+  function loadEventsList() {
+    callServer('getEventsList', [adminToken])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        renderEventsTable(response.events || []);
+      })
+      .catch(function() {
+        document.getElementById('events-table-wrapper').innerHTML = '<div class="empty-note">Failed to load events.</div>';
+      });
+  }
+
+  function renderEventsTable(events) {
+    const wrapper = document.getElementById('events-table-wrapper');
+    if (!events.length) {
+      wrapper.innerHTML = '<div class="empty-note">No events created yet.</div>';
+      return;
+    }
+
+    const sorted = events.slice().sort(function(a, b) {
+      if (a.status === b.status) return 0;
+      return a.status === 'Open' ? -1 : 1;
+    });
+
+    let html = '<table><thead><tr><th>Event</th><th>Date</th><th>Created By</th><th>Status</th><th></th></tr></thead><tbody>';
+    sorted.forEach(function(ev) {
+      const badgeClass = ev.status === 'Open' ? 'event-status-open' : 'event-status-closed';
+      html += '<tr>' +
+        '<td data-label="Event">' + escapeForDisplay(ev.eventName) + '</td>' +
+        '<td data-label="Date">' + escapeForDisplay(ev.eventDate) + '</td>' +
+        '<td data-label="Created By">' + escapeForDisplay(ev.createdBy) + '</td>' +
+        '<td data-label="Status"><span class="event-status-badge ' + badgeClass + '">' + escapeForDisplay(ev.status) + '</span></td>' +
+        '<td data-label="" class="vol-actions">' +
+          '<a href="' + ev.formViewUrl + '" target="_blank" style="font-size:12px;margin-right:10px;">View</a>' +
+          (ev.canManage ? '<a href="' + ev.formEditUrl + '" target="_blank" style="font-size:12px;margin-right:10px;">Edit</a>' : '') +
+          (ev.canManage
+            ? (ev.status === 'Open'
+                ? '<button class="btn-vol-delete" onclick="submitCloseEvent(' + ev.row + ')">Close</button>'
+                : '<button class="btn-vol-edit" onclick="submitReopenEvent(' + ev.row + ')">Reopen</button>')
+            : '') +
+        '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrapper.innerHTML = html;
+  }
+
+  function submitCloseEvent(row) {
+    callServer('closeEvent', [adminToken, row])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        loadEventsList();
+      })
+      .catch(function() { loadEventsList(); });
+  }
+
+  function submitReopenEvent(row) {
+    callServer('reopenEvent', [adminToken, row])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        loadEventsList();
+      })
+      .catch(function() { loadEventsList(); });
+  }
+
+  function toggleRegisterFormPanel() {
+    const panel = document.getElementById('register-form-panel');
+    panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+  }
+
+  function submitRegisterExistingForm() {
+    const formUrl = document.getElementById('register-form-url').value.trim();
+    const eventName = document.getElementById('register-form-event-name').value.trim();
+    const eventDate = document.getElementById('register-form-event-date').value;
+    const statusDiv = document.getElementById('register-form-status');
+    const btn = document.getElementById('register-form-btn');
+
+    if (!formUrl) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Form edit URL is required.'; return; }
+    if (!eventName) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event name is required.'; return; }
+    if (!eventDate) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event date is required.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Registering...';
+    statusDiv.className = 'vol-status-msg';
+    statusDiv.textContent = '';
+
+    callServer('registerExistingEventForm', [adminToken, formUrl, eventName, eventDate])
+      .then(function(response) {
+        btn.disabled = false;
+        btn.textContent = 'Register Form';
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        if (response.success) {
+          document.getElementById('register-form-url').value = '';
+          document.getElementById('register-form-event-name').value = '';
+          document.getElementById('register-form-event-date').value = '';
+          loadEventsList();
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Register Form';
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  // ---------------- Reports tab ----------------
+
+  function loadReportEvents() {
+    const select = document.getElementById('report-event-select');
+    callServer('getRecentCompletedEvents', [adminToken])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        const events = response.events || [];
+        select.innerHTML = '';
+        if (!events.length) {
+          select.innerHTML = '<option value="">No completed events in the last 4 weeks</option>';
+          return;
+        }
+        select.innerHTML = '<option value="">Select an event...</option>';
+        events.forEach(function(ev) {
+          const opt = document.createElement('option');
+          opt.value = ev.eventName;
+          opt.textContent = ev.eventName + ' (' + ev.eventDate + ')';
+          select.appendChild(opt);
+        });
+      })
+      .catch(function() {
+        select.innerHTML = '<option value="">Failed to load events</option>';
+      });
+  }
+
+  function submitOnDemandReport() {
+    const eventName = document.getElementById('report-event-select').value;
+    const recipient = document.getElementById('report-recipient-input').value.trim();
+    const statusDiv = document.getElementById('report-status-msg');
+
+    if (!eventName) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Please select an event.'; return; }
+    if (!recipient) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Please enter a recipient email.'; return; }
+
+    statusDiv.className = 'vol-status-msg';
+    statusDiv.textContent = 'Sending...';
+
+    callServer('sendOnDemandReport', [adminToken, eventName, recipient])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+      })
+      .catch(function() {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  // ---------------- Branding tab ----------------
+
+  let pendingLogoBase64 = null;
+  let pendingLogoMimeType = null;
+  const MAX_LOGO_BYTES = 30 * 1024;
+
+  function loadCurrentLogoPreview() {
+    callServer('getCurrentLogoInfo', [adminToken])
+      .then(function(response) {
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        const img = document.getElementById('current-logo-preview');
+        const note = document.getElementById('no-logo-note');
+        if (response.dataUri) {
+          img.src = response.dataUri;
+          img.style.display = 'inline-block';
+          note.style.display = 'none';
+        } else {
+          img.style.display = 'none';
+          note.style.display = 'inline';
+        }
+      })
+      .catch(function() { /* leave whatever was showing */ });
+  }
+
+  function previewNewLogo(input) {
+    const file = input.files[0];
+    const uploadBtn = document.getElementById('upload-logo-btn');
+    const statusDiv = document.getElementById('branding-status-msg');
+    statusDiv.textContent = '';
+    statusDiv.className = 'vol-status-msg';
+    uploadBtn.disabled = true;
+    pendingLogoBase64 = null;
+    pendingLogoMimeType = null;
+
+    if (!file) {
+      document.getElementById('new-logo-preview-wrap').style.display = 'none';
+      return;
+    }
+
+    const sizeKb = (file.size / 1024).toFixed(1);
+    document.getElementById('new-logo-size').textContent = sizeKb + 'KB';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+      const commaIdx = dataUrl.indexOf(',');
+      pendingLogoBase64 = dataUrl.substring(commaIdx + 1);
+      pendingLogoMimeType = file.type;
+
+      document.getElementById('new-logo-preview').src = dataUrl;
+      document.getElementById('new-logo-preview-wrap').style.display = 'block';
+
+      if (file.size > MAX_LOGO_BYTES) {
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'This image is ' + sizeKb + 'KB - please use one under ' + (MAX_LOGO_BYTES / 1024) + 'KB.';
+        uploadBtn.disabled = true;
+      } else {
+        uploadBtn.disabled = false;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function submitLogoUpload() {
+    if (!pendingLogoBase64) return;
+    const uploadBtn = document.getElementById('upload-logo-btn');
+    const statusDiv = document.getElementById('branding-status-msg');
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
+
+    callServer('updateBrandLogo', [adminToken, pendingLogoBase64, pendingLogoMimeType])
+      .then(function(response) {
+        uploadBtn.textContent = 'Upload New Logo';
+        if (response.sessionExpired) { handleSessionExpired(); return; }
+        statusDiv.className = 'vol-status-msg ' + (response.success ? 'success' : 'error');
+        statusDiv.textContent = response.message;
+        uploadBtn.disabled = !response.success;
+        if (response.success) {
+          loadCurrentLogoPreview();
+          loadDashLogo();
+          document.getElementById('new-logo-input').value = '';
+          document.getElementById('new-logo-preview-wrap').style.display = 'none';
+          pendingLogoBase64 = null;
+        }
+      })
+      .catch(function() {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload New Logo';
+        statusDiv.className = 'vol-status-msg error';
+        statusDiv.textContent = 'Something went wrong. Please try again.';
+      });
+  }
+
+  function renderTable(events) {
+    const wrapper = document.getElementById('table-wrapper');
+    if (!events.length) {
+      wrapper.innerHTML = '<div class="empty-note">No event data yet.</div>';
+      return;
+    }
+
+    let html = '<table><thead><tr>' +
+      '<th>Event</th><th>Date</th><th>Registered</th><th>QR Sent</th>' +
+      '<th>Attended</th><th>Late</th><th>No-Show</th><th>Cancelled</th>' +
+      '</tr></thead><tbody>';
+
+    events.forEach(function(ev) {
+      html += '<tr>' +
+        '<td data-label="Event">' + escapeForDisplay(ev.eventName) + '</td>' +
+        '<td data-label="Date">' + escapeForDisplay(ev.eventDate || '—') + '</td>' +
+        '<td class="num" data-label="Registered">' + ev.registered + '</td>' +
+        '<td class="num" data-label="QR Sent">' + ev.qrSent + '</td>' +
+        '<td class="num" data-label="Attended">' + ev.attended + '</td>' +
+        '<td class="num" data-label="Late">' + ev.attendedLate + '</td>' +
+        '<td class="num" data-label="No-Show">' + ev.notAttended + '</td>' +
+        '<td class="num" data-label="Cancelled">' + ev.cancelled + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    wrapper.innerHTML = html;
+  }
+
+  function escapeForDisplay(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

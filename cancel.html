@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#002855">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="config.js"></script>
+<script src="api.js"></script>
+
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cancel Registration - PMI Chennai Chapter</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; margin: 0; padding: 20px; background: #eaedf2; color: #333; }
+.container { max-width: 420px; margin: 60px auto; background: #ffffff; padding: 30px 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); box-sizing: border-box; }
+.brand-title { color: #002855; font-size: 20px; font-weight: 700; margin: 0 0 20px; }
+.icon { font-size: 44px; display: block; margin-bottom: 12px; }
+p { font-size: 14px; line-height: 1.6; color: #475569; }
+.event-name { color: #002855; font-weight: 700; }
+button { width: 100%; padding: 14px; margin-top: 10px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-sizing: border-box; }
+.btn-cancel { background: #dc2626; color: #fff; }
+.btn-cancel:hover { background: #b91c1c; }
+.btn-cancel:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: transparent; color: #64748b; border: 1px solid #cbd5e1; }
+#result-msg { margin-top: 16px; font-size: 14px; font-weight: 600; padding: 12px; border-radius: 8px; display: none; }
+#result-msg.success { display: block; background: #d1fae5; color: #065f46; }
+#result-msg.error { display: block; background: #fee2e2; color: #991b1b; }
+#loading-msg { font-size: 14px; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <img src="assets/logo-chapter.png" alt="PMI Chennai Chapter" style="display:block;max-width:200px;height:auto;margin:0 auto 14px;">
+  <div class="brand-title">PMI Chennai Chapter</div>
+
+  <div id="loading-view">
+    <span class="icon">⏳</span>
+    <p id="loading-msg">Loading your registration details...</p>
+  </div>
+
+  <div id="confirm-view" style="display:none;">
+    <span class="icon">⚠️</span>
+    <p>Hi <strong id="attendee-first-name"></strong>, are you sure you want to cancel your registration for<br>
+      <span class="event-name" id="event-name-display"></span>?
+    </p>
+    <p style="font-size:12px; color:#94a3b8;">This can't be undone from this page. If you change your mind later, please contact the organizers directly.</p>
+    <button class="btn-cancel" id="confirm-btn" onclick="doCancel()">Yes, Cancel My Registration</button>
+    <button class="btn-secondary" onclick="keepRegistration()">No, Keep My Registration</button>
+  </div>
+
+  <div id="error-view" style="display:none;">
+    <span class="icon">❌</span>
+    <p id="error-msg"></p>
+  </div>
+
+  <div id="result-msg"></div>
+</div>
+
+<script>
+  const _q = new URLSearchParams(location.search);
+  const rowParam = _q.get('row') || '', emailParam = _q.get('email') || '', sigParam = _q.get('sig') || '';
+  const $ = id => document.getElementById(id);
+
+  function showError(message) {
+    $('loading-view').style.display = 'none';
+    $('confirm-view').style.display = 'none';
+    $('error-view').style.display = 'block';
+    $('error-msg').textContent = message;
+  }
+  function showResult(ok, text) {
+    const m = $('result-msg'); m.className = ok ? 'success' : 'error'; m.textContent = text; m.style.display = 'block';
+  }
+
+  window.onload = async function () {
+    if (!rowParam || !emailParam || !sigParam) { showError('This cancellation link is missing required information.'); return; }
+    try {
+      const result = await callServer('getCancellationDetails', [rowParam, emailParam, sigParam]);
+      $('loading-view').style.display = 'none';
+      if (!result.success) { showError(result.message || 'This cancellation link is invalid.'); return; }
+      if (result.alreadyCancelled) { showResult(true, 'This registration was already cancelled. Nothing more to do here.'); return; }
+      $('attendee-first-name').textContent = result.firstName || 'there';
+      $('event-name-display').textContent = result.eventName || 'this event';
+      $('confirm-view').style.display = 'block';
+    } catch (e) {
+      showError('Something went wrong loading this page. Please try the link again.');
+    }
+  };
+
+  function keepRegistration() {
+    $('confirm-view').style.display = 'none';
+    const eventName = $('event-name-display').textContent || 'the event';
+    showResult(true, 'Great — your registration for ' + eventName + ' is still active. Looking forward to seeing you there!');
+  }
+
+  async function doCancel() {
+    const btn = $('confirm-btn');
+    btn.disabled = true; btn.textContent = 'Cancelling...';
+    try {
+      const result = await callServer('confirmCancellation', [rowParam, emailParam, sigParam]);
+      $('confirm-view').style.display = 'none';
+      showResult(!!result.success, result.message);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Yes, Cancel My Registration';
+      showResult(false, 'Something went wrong. Please try again.');
+    }
+  }
+</script>
+</body>
+</html>

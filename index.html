@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#002855">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="config.js"></script>
+<script src="api.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PMICC Checkpoint</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #eaedf2; color: #333; display: flex; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; }
+  .container { max-width: 380px; width: 100%; background: #fff; padding: 35px 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: center; box-sizing: border-box; }
+  .brand-logo { display: block; max-width: 280px; height: auto; margin: 0 auto 14px; }
+  .brand-title { color: #002855; font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+  .sub-title { font-size: 12px; color: #64748b; margin: 0 0 28px; }
+  a.launch-btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 15px; font-weight: bold; border-radius: 8px; text-decoration: none; box-sizing: border-box; }
+  .btn-scanner { background: #002855; color: #fff; }
+  .btn-admin { background: transparent; color: #002855; border: 1px solid #002855; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <img class="brand-logo" id="launcher-logo" src="assets/logo-full.png" alt="PMI Chennai Chapter - Chapter of the Year 2025 Winner">
+    <div class="brand-title">PMICC Checkpoint</div>
+    <div class="sub-title">Unified Multi-Event Attendance Tracker</div>
+    <a class="launch-btn btn-scanner" href="scanner.html">📸 Volunteer Scanner</a>
+    <a class="launch-btn btn-admin" href="admin.html">⚙️ Admin Dashboard</a>
+  </div>
+</body>
+</html>
