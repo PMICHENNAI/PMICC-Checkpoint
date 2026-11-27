@@ -3,5 +3,5 @@
 window.PMICC_CONFIG = {
   // false = logo comes from assets/ in this repo (recommended). true = old behaviour: logo stored in the Sheet via the Admin screen.
   USE_SERVER_LOGO: false,
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxF3_sgTH2GA8nebJ3XG3hj3d4VIchs4nOUNgM9KdjCSGVYQ1lJMD1HNdpyAeo-68QEgQ/exec'
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxAuJWmjTWZmFlqksb03Yx3xYIGf92Gb0IkCKBEgjJOgcoW1NRn_GuUm06g4OYdrItjNw/exec'
 };
