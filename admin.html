@@ -62,10 +62,12 @@
 
   #volunteers-view, #reports-view, #branding-view, #admins-view, #auditlog-view, #events-view { display: none; }
 
-  #new-event-name, #new-event-date, #new-event-mode, #register-form-event-mode, #register-form-url, #register-form-event-name, #register-form-event-date { width: 100%; box-sizing: border-box; padding: 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; }
+  #new-event-name, #new-event-date, #new-event-mode, #register-form-event-mode, #new-event-audience, #register-form-event-audience, #register-form-url, #register-form-event-name, #register-form-event-date { width: 100%; box-sizing: border-box; padding: 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; }
   .event-mode-hint { font-size: 12px; color: #64748b; margin: -4px 0 10px; }
   .event-mode-badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; }
   .event-mode-physical { background: #e0ecff; color: #1e3a8a; }
+  .event-mode-members { background: #fef3c7; color: #92400e; }
+  .event-mode-open { background: #e2e8f0; color: #334155; }
   .event-mode-virtual { background: #ede9fe; color: #5b21b6; }
   .register-form-link { font-size: 12px; color: #002855; text-decoration: underline; cursor: pointer; }
   .register-form-panel { margin-top: 10px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
@@ -278,6 +280,12 @@
       <option value="Virtual">Virtual - no QR pass, thank-you email only</option>
     </select>
     <div class="event-mode-hint">Members do not see this choice on the registration form.</div>
+    <select id="new-event-audience">
+      <option value="">Who can register? (required)</option>
+      <option value="Members Only">Members Only - PMI ID required and verified</option>
+      <option value="Members + Non-Members">Members + Non-Members - PMI ID optional</option>
+    </select>
+    <div class="event-mode-hint">Members Only: the PMI ID question becomes mandatory and is checked against the membership list.</div>
 
     <div id="custom-questions-list"></div>
     <button type="button" class="btn-add-question" onclick="addQuestionRow()">+ Add a question</button>
@@ -297,6 +305,11 @@
           <option value="">Event mode (required)</option>
           <option value="Physical">Physical - QR entry pass is emailed after registration</option>
           <option value="Virtual">Virtual - no QR pass, thank-you email only</option>
+        </select>
+        <select id="register-form-event-audience">
+          <option value="">Who can register? (required)</option>
+          <option value="Members Only">Members Only - PMI ID required and verified</option>
+          <option value="Members + Non-Members">Members + Non-Members - PMI ID optional</option>
         </select>
         <button id="register-form-btn" onclick="submitRegisterExistingForm()" style="width:auto;padding:9px 16px;font-size:13px;">Register Form</button>
         <div class="vol-status-msg" id="register-form-status"></div>
@@ -1121,6 +1134,7 @@
     const eventName = document.getElementById('new-event-name').value.trim();
     const eventDate = document.getElementById('new-event-date').value;
     const eventMode = document.getElementById('new-event-mode').value;
+    const eventAudience = document.getElementById('new-event-audience').value;
     const statusDiv = document.getElementById('create-event-status');
     const resultDiv = document.getElementById('create-event-result');
     const btn = document.getElementById('create-event-btn');
@@ -1128,6 +1142,7 @@
     if (!eventName) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event name is required.'; return; }
     if (!eventDate) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event date is required.'; return; }
     if (!eventMode) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Please choose the event mode (Physical or Virtual).'; return; }
+    if (!eventAudience) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Please choose who can register (Members Only or Members + Non-Members).'; return; }
 
     const collected = collectCustomQuestions();
     if (collected.error) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = collected.error; return; }
@@ -1138,7 +1153,7 @@
     statusDiv.textContent = '';
     resultDiv.style.display = 'none';
 
-    callServer('createEventForm', [adminToken, eventName, eventDate, collected.questions, eventMode])
+    callServer('createEventForm', [adminToken, eventName, eventDate, collected.questions, eventMode, eventAudience])
       .then(function(response) {
         btn.disabled = false;
         btn.textContent = 'Create Event Form';
@@ -1149,7 +1164,7 @@
           resultDiv.style.display = 'block';
           resultDiv.innerHTML =
             '<div class="event-result-box">' +
-              '<div style="font-weight:700;color:#065f46;margin-bottom:6px;">✅ ' + escapeForDisplay(response.eventName) + ' created' + (response.eventMode ? ' (' + escapeForDisplay(response.eventMode) + ')' : '') + '</div>' +
+              '<div style="font-weight:700;color:#065f46;margin-bottom:6px;">✅ ' + escapeForDisplay(response.eventName) + ' created' + (response.eventMode ? ' (' + escapeForDisplay(response.eventMode) + (response.eventAudience ? ', ' + escapeForDisplay(response.eventAudience) : '') + ')' : '') + '</div>' +
               '<div style="margin-bottom:8px;">' +
                 '<a href="' + response.formViewUrl + '" target="_blank">Open registration form</a> &middot; ' +
                 '<a href="' + response.formEditUrl + '" target="_blank">Edit questions in Google Forms</a>' +
@@ -1159,6 +1174,7 @@
           document.getElementById('new-event-name').value = '';
           document.getElementById('new-event-date').value = '';
           document.getElementById('new-event-mode').value = '';
+          document.getElementById('new-event-audience').value = '';
           document.getElementById('custom-questions-list').innerHTML = '';
           loadEventsList();
         }
@@ -1208,13 +1224,14 @@
       return a.status === 'Open' ? -1 : 1;
     });
 
-    let html = '<table><thead><tr><th>Event</th><th>Date</th><th>Mode</th><th>Created By</th><th>Status</th><th></th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>Event</th><th>Date</th><th>Mode</th><th>Audience</th><th>Created By</th><th>Status</th><th></th></tr></thead><tbody>';
     sorted.forEach(function(ev) {
       const badgeClass = ev.status === 'Open' ? 'event-status-open' : 'event-status-closed';
       html += '<tr>' +
         '<td data-label="Event">' + escapeForDisplay(ev.eventName) + '</td>' +
         '<td data-label="Date">' + escapeForDisplay(ev.eventDate) + '</td>' +
         '<td data-label="Mode"><span class="event-mode-badge ' + (ev.eventMode === 'Virtual' ? 'event-mode-virtual' : 'event-mode-physical') + '">' + escapeForDisplay(ev.eventMode || 'Physical') + '</span></td>' +
+        '<td data-label="Audience"><span class="event-mode-badge ' + (ev.eventAudience === 'Members Only' ? 'event-mode-members' : 'event-mode-open') + '">' + escapeForDisplay(ev.eventAudience || 'Members + Non-Members') + '</span></td>' +
         '<td data-label="Created By">' + escapeForDisplay(ev.createdBy) + '</td>' +
         '<td data-label="Status"><span class="event-status-badge ' + badgeClass + '">' + escapeForDisplay(ev.status) + '</span></td>' +
         '<td data-label="" class="vol-actions">' +
@@ -1260,6 +1277,7 @@
     const eventName = document.getElementById('register-form-event-name').value.trim();
     const eventDate = document.getElementById('register-form-event-date').value;
     const eventMode = document.getElementById('register-form-event-mode').value;
+    const eventAudience = document.getElementById('register-form-event-audience').value;
     const statusDiv = document.getElementById('register-form-status');
     const btn = document.getElementById('register-form-btn');
 
@@ -1267,13 +1285,14 @@
     if (!eventName) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event name is required.'; return; }
     if (!eventDate) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Event date is required.'; return; }
     if (!eventMode) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Please choose the event mode (Physical or Virtual).'; return; }
+    if (!eventAudience) { statusDiv.className = 'vol-status-msg error'; statusDiv.textContent = 'Please choose who can register (Members Only or Members + Non-Members).'; return; }
 
     btn.disabled = true;
     btn.textContent = 'Registering...';
     statusDiv.className = 'vol-status-msg';
     statusDiv.textContent = '';
 
-    callServer('registerExistingEventForm', [adminToken, formUrl, eventName, eventDate, eventMode])
+    callServer('registerExistingEventForm', [adminToken, formUrl, eventName, eventDate, eventMode, eventAudience])
       .then(function(response) {
         btn.disabled = false;
         btn.textContent = 'Register Form';
@@ -1285,6 +1304,7 @@
           document.getElementById('register-form-event-name').value = '';
           document.getElementById('register-form-event-date').value = '';
           document.getElementById('register-form-event-mode').value = '';
+          document.getElementById('register-form-event-audience').value = '';
           loadEventsList();
         }
       })
